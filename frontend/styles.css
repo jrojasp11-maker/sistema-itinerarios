@@ -501,6 +501,212 @@ button {
   opacity: 1;
 }
 
+.flight-plane {
+  opacity: 0;
+  pointer-events: none;
+  color: #e8f4ff;
+  filter: url(#markerGlow);
+  transition: opacity 200ms ease;
+}
+
+.flight-plane.visible {
+  opacity: 1;
+}
+
+.map-tool-btn {
+  padding: 6px 10px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+  background: transparent;
+  color: var(--muted);
+  font-family: var(--font-ui);
+  font-size: 0.72rem;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  cursor: pointer;
+  transition: border-color 160ms ease, color 160ms ease, background 160ms ease;
+}
+
+.map-tool-btn:hover:not(:disabled) {
+  border-color: var(--line-strong);
+  color: var(--text);
+  background: var(--surface-hover);
+}
+
+.map-tool-btn.active {
+  border-color: var(--accent);
+  color: var(--accent);
+  background: var(--accent-soft);
+}
+
+.map-tool-btn:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.mini-map-panel {
+  position: absolute;
+  right: 20px;
+  bottom: 108px;
+  z-index: 7;
+  width: min(280px, calc(100% - 40px));
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: var(--bg-elevated);
+  box-shadow: var(--shadow);
+  overflow: hidden;
+}
+
+.mini-map-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 8px 10px;
+  border-bottom: 1px solid var(--line);
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--text);
+}
+
+.mini-map-head small {
+  color: var(--muted);
+  font-weight: 500;
+}
+
+.mini-map-leaflet {
+  height: 200px;
+  width: 100%;
+}
+
+.mini-map-pin span {
+  display: block;
+  width: 12px;
+  height: 12px;
+  border: 2px solid var(--bg-elevated);
+  border-radius: 50%;
+  box-shadow: 0 0 0 2px rgba(0, 0, 0, 0.25);
+}
+
+.export-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  padding: 0 20px 12px;
+}
+
+.primary-button.compact {
+  padding: 8px 14px;
+  font-size: 0.82rem;
+}
+
+.chat-fab {
+  position: fixed;
+  right: 22px;
+  bottom: 22px;
+  z-index: 40;
+  width: 52px;
+  height: 52px;
+  border: 1px solid var(--line-strong);
+  border-radius: 50%;
+  background: var(--bg-elevated);
+  color: var(--accent);
+  font-size: 1.25rem;
+  box-shadow: var(--shadow);
+  cursor: pointer;
+  transition: transform 160ms var(--ease), border-color 160ms ease;
+}
+
+.chat-fab:hover {
+  transform: translateY(-2px);
+  border-color: var(--accent);
+}
+
+.chat-panel {
+  position: fixed;
+  right: 22px;
+  bottom: 86px;
+  z-index: 39;
+  display: flex;
+  flex-direction: column;
+  width: min(360px, calc(100vw - 44px));
+  max-height: min(480px, calc(100vh - 120px));
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: var(--bg-elevated);
+  box-shadow: var(--shadow);
+  overflow: hidden;
+}
+
+.chat-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 14px 14px 10px;
+  border-bottom: 1px solid var(--line);
+}
+
+.chat-head h3 {
+  margin: 4px 0 0;
+  font-family: var(--font-display);
+  font-size: 1.05rem;
+  font-weight: 600;
+}
+
+.chat-thread {
+  flex: 1;
+  min-height: 120px;
+  max-height: 280px;
+  overflow-y: auto;
+  padding: 12px 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.chat-msg {
+  max-width: 92%;
+  padding: 8px 10px;
+  border-radius: var(--radius-sm);
+  font-size: 0.82rem;
+  line-height: 1.45;
+}
+
+.chat-msg.user {
+  align-self: flex-end;
+  background: var(--accent-soft);
+  color: var(--text);
+}
+
+.chat-msg.bot {
+  align-self: flex-start;
+  background: var(--surface);
+  color: var(--muted);
+  border: 1px solid var(--line);
+}
+
+.chat-foot {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 8px;
+  padding: 10px 12px 12px;
+  border-top: 1px solid var(--line);
+}
+
+.chat-foot textarea {
+  resize: vertical;
+  min-height: 44px;
+  max-height: 120px;
+  padding: 8px 10px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+  background: var(--surface);
+  color: var(--text);
+  font-family: var(--font-ui);
+  font-size: 0.82rem;
+}
+
 .airport-marker {
   cursor: pointer;
 }
@@ -1724,6 +1930,23 @@ html[data-theme="light"] .marker-label {
   .form-grid,
   .status-field {
     grid-template-columns: 1fr;
+  }
+
+  .mini-map-panel {
+    right: 14px;
+    bottom: 88px;
+    width: calc(100% - 28px);
+  }
+
+  .chat-panel {
+    right: 14px;
+    left: 14px;
+    width: auto;
+  }
+
+  .chat-fab {
+    right: 14px;
+    bottom: 14px;
   }
 }
 
