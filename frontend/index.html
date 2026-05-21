@@ -5,7 +5,6 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>AeroRutas | Itinerarios empresariales</title>
   <meta name="description" content="Itinerarios aéreos empresariales en Colombia — mapa interactivo, rutas y registro." />
-  <meta name="theme-color" content="#5eb3ff" media="(prefers-color-scheme: light)" />
   <meta name="theme-color" content="#0c1018" />
   <link rel="manifest" href="./manifest.webmanifest" />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
@@ -47,9 +46,6 @@
         <a class="doc-link" id="linkAirportDocs" href="#" target="_blank" rel="noopener noreferrer" title="OpenAPI aeropuertos">:8001</a>
         <a class="doc-link" id="linkItineraryDocs" href="#" target="_blank" rel="noopener noreferrer" title="OpenAPI itinerarios">:8002</a>
       </nav>
-      <button type="button" class="theme-toggle" id="themeToggle" aria-label="Cambiar tema claro/oscuro" title="Tema">
-        <span class="theme-icon" aria-hidden="true">◐</span>
-      </button>
     </div>
   </header>
 
@@ -169,11 +165,11 @@
         </g>
         <path id="routeShadow" class="route-shadow" />
         <path id="routeLine" class="route-line" />
+        <circle id="routePulse" class="route-pulse" r="5" opacity="0" />
+        <g id="airportLayer"></g>
         <g id="flightPlane" class="flight-plane" aria-hidden="true">
           <path d="M0 -9 L5 4 L0 2 L-5 4 Z" fill="currentColor" />
         </g>
-        <circle id="routePulse" class="route-pulse" r="5" opacity="0" />
-        <g id="airportLayer"></g>
       </svg>
 
       <div class="map-tooltip" id="mapTooltip" role="status" aria-live="polite">
@@ -347,27 +343,6 @@
     </aside>
   </main>
 
-  <button type="button" class="chat-fab" id="chatFab" aria-expanded="false" aria-controls="chatPanel" title="Asistente de rutas">
-    <span aria-hidden="true">✦</span>
-    <span class="sr-only">Abrir asistente</span>
-  </button>
-
-  <section class="chat-panel" id="chatPanel" hidden aria-label="Asistente de itinerarios">
-    <header class="chat-head">
-      <div>
-        <span class="eyebrow">Asistente</span>
-        <h3>Rutas en español</h3>
-      </div>
-      <button type="button" class="icon-button subtle" id="chatClose" aria-label="Cerrar asistente">×</button>
-    </header>
-    <div class="chat-thread" id="chatThread" role="log" aria-live="polite"></div>
-    <footer class="chat-foot">
-      <label class="sr-only" for="chatInput">Mensaje</label>
-      <textarea id="chatInput" rows="2" placeholder="Ej.: BOG → CLO el viernes"></textarea>
-      <button type="button" class="primary-button compact" id="chatSend">Enviar</button>
-    </footer>
-  </section>
-
   <script src="https://unpkg.com/lucide@0.487.0/dist/umd/lucide.min.js" defer></script>
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin="" defer></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js" defer crossorigin="anonymous"></script>
@@ -376,7 +351,6 @@
   <script src="./app.js" defer></script>
   <script src="./minimap.js" defer></script>
   <script src="./simulator.js" defer></script>
-  <script src="./chat.js" defer></script>
   <script src="./export.js" defer></script>
 </body>
 </html>

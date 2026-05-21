@@ -9,15 +9,28 @@
   let destMarker = null;
   let panelEl = null;
   let toggleBtn = null;
+  let booted = false;
+
+  function whenReady(fn) {
+    if (window.AeroRutasAPI) {
+      fn();
+      return;
+    }
+    window.addEventListener("aerorutas:ready", () => fn(), { once: true });
+  }
 
   function boot() {
-    if (!window.AeroRutasAPI) {
+    if (booted) return;
+    panelEl = document.getElementById("miniMapPanel");
+    toggleBtn = document.getElementById("toggleMiniMap");
+    if (!panelEl || !toggleBtn) return;
+
+    if (typeof L === "undefined") {
       requestAnimationFrame(boot);
       return;
     }
-    panelEl = document.getElementById("miniMapPanel");
-    toggleBtn = document.getElementById("toggleMiniMap");
-    if (!panelEl || !toggleBtn || typeof L === "undefined") return;
+
+    booted = true;
 
     const saved = localStorage.getItem(STORAGE_KEY) === "1";
     if (saved) openPanel(false);
@@ -27,13 +40,8 @@
       else closePanel(true);
     });
 
+    window.AeroRutasAPI.addSelectionListener(syncMarkers);
     syncMarkers();
-    const api = window.AeroRutasAPI;
-    const prev = api.onSelectionChange;
-    api.onSelectionChange = () => {
-      if (typeof prev === "function") prev();
-      syncMarkers();
-    };
   }
 
   function colombiaBounds() {
@@ -47,7 +55,7 @@
   function ensureMap() {
     if (map) return map;
     const container = document.getElementById("miniMapLeaflet");
-    if (!container) return null;
+    if (!container || typeof L === "undefined") return null;
 
     map = L.map(container, {
       zoomControl: true,
@@ -57,7 +65,8 @@
 
     L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
       maxZoom: 12,
-      attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',
+      attribution:
+        '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',
     }).addTo(map);
 
     map.fitBounds(colombiaBounds(), { padding: [12, 12] });
@@ -95,7 +104,9 @@
       points.push([origin.lat, origin.lng]);
     }
     if (destination?.lat != null) {
-      destMarker = L.marker([destination.lat, destination.lng], { icon: markerIcon("destination") })
+      destMarker = L.marker([destination.lat, destination.lng], {
+        icon: markerIcon("destination"),
+      })
         .addTo(map)
         .bindTooltip(`${destination.id} · destino`, { direction: "top" });
       points.push([destination.lat, destination.lng]);
@@ -115,12 +126,17 @@
     toggleBtn.classList.add("active");
     toggleBtn.setAttribute("aria-pressed", "true");
     if (persist) localStorage.setItem(STORAGE_KEY, "1");
-    requestAnimationFrame(() => {
+
+    const initMap = () => {
       const m = ensureMap();
-      if (m) {
-        m.invalidateSize();
-        syncMarkers();
-      }
+      if (!m) return;
+      m.invalidateSize({ animate: false });
+      syncMarkers();
+    };
+
+    requestAnimationFrame(() => {
+      initMap();
+      setTimeout(initMap, 120);
     });
   }
 
@@ -131,9 +147,13 @@
     if (persist) localStorage.setItem(STORAGE_KEY, "0");
   }
 
+  function start() {
+    whenReady(boot);
+  }
+
   if (document.readyState === "loading") {
-    document.addEventListener("DOMContentLoaded", boot);
+    document.addEventListener("DOMContentLoaded", start);
   } else {
-    boot();
+    start();
   }
 })();

@@ -48,19 +48,24 @@ const principalSeeds = [
 const airportCatalog = new Map();
 
 const LABEL_OFFSETS = {
-  BOG: { dx: 0, dy: -16 },
-  MDE: { dx: 14, dy: -14 },
-  EOH: { dx: -16, dy: 8 },
-  PEI: { dx: -14, dy: -12 },
-  AXM: { dx: -12, dy: 6 },
-  MZL: { dx: 12, dy: 4 },
-  CLO: { dx: -14, dy: 10 },
-  BGA: { dx: 12, dy: -10 },
-  CUC: { dx: 10, dy: -12 },
+  BOG: { dx: 0, dy: -18 },
+  MDE: { dx: 16, dy: -16 },
+  EOH: { dx: -18, dy: 10 },
+  PEI: { dx: -16, dy: -14 },
+  AXM: { dx: -14, dy: 8 },
+  MZL: { dx: 14, dy: 6 },
+  CLO: { dx: -16, dy: 12 },
+  BGA: { dx: 14, dy: -12 },
+  CUC: { dx: 12, dy: -14 },
+  CTG: { dx: 12, dy: -14 },
+  BAQ: { dx: -14, dy: -12 },
+  SMR: { dx: 10, dy: -14 },
+  LET: { dx: 0, dy: 14 },
+  VVC: { dx: -12, dy: 10 },
 };
 
 const RECENT_ROUTES_KEY = "aerorutas_recent_routes";
-const THEME_KEY = "aerorutas_theme";
+const selectionListeners = [];
 const CRUISE_KMH = 750;
 const ROUTING_FACTOR = 1.12;
 const GROUND_MINUTES = 25;
@@ -88,7 +93,6 @@ async function init() {
   setDefaultTravelDate();
   await Promise.all([loadMapConfig(), loadAirportMedia()]);
   initDocLinks();
-  initTheme();
   bindEvents();
   renderAirports();
   updateMapFilterCount();
@@ -103,6 +107,7 @@ async function init() {
   refreshIcons();
   updateTabIndicator();
   requestAnimationFrame(() => document.body.classList.add("app-ready"));
+  window.dispatchEvent(new CustomEvent("aerorutas:ready"));
 }
 
 function seedPrincipalAirports() {
@@ -250,7 +255,6 @@ function cacheElements() {
     recentChips: $("#recentChips"),
     linkAirportDocs: $("#linkAirportDocs"),
     linkItineraryDocs: $("#linkItineraryDocs"),
-    themeToggle: $("#themeToggle"),
     itineraryForm: $("#itineraryForm"),
     travelDate: $("#travelDate"),
     duration: $("#duration"),
@@ -311,8 +315,6 @@ function bindEvents() {
     if (entry) applyRecentRoute(entry);
   });
 
-  els.themeToggle?.addEventListener("click", toggleTheme);
-
   document.addEventListener("keydown", (event) => {
     if (event.key === "Escape") clearSelection();
   });
@@ -326,24 +328,6 @@ function bindEvents() {
 function initDocLinks() {
   if (els.linkAirportDocs) els.linkAirportDocs.href = `${API.airport}/docs`;
   if (els.linkItineraryDocs) els.linkItineraryDocs.href = `${API.itinerary}/docs`;
-}
-
-function initTheme() {
-  const saved = localStorage.getItem(THEME_KEY);
-  const prefersLight = window.matchMedia("(prefers-color-scheme: light)").matches;
-  const theme = saved || (prefersLight ? "light" : "dark");
-  document.documentElement.dataset.theme = theme === "light" ? "light" : "";
-}
-
-function toggleTheme() {
-  const isLight = document.documentElement.dataset.theme === "light";
-  if (isLight) {
-    document.documentElement.removeAttribute("data-theme");
-    localStorage.setItem(THEME_KEY, "dark");
-  } else {
-    document.documentElement.dataset.theme = "light";
-    localStorage.setItem(THEME_KEY, "light");
-  }
 }
 
 function loadRecentRoutes() {
@@ -584,7 +568,7 @@ function preloadAirportPhoto(airport) {
 function renderAirports() {
   els.airportLayer.innerHTML = "";
   getVisibleAirports().forEach((airport) => {
-    const offset = LABEL_OFFSETS[airport.id] || { dx: 0, dy: -14 };
+    const offset = LABEL_OFFSETS[airport.id] || { dx: 0, dy: -16 };
     const group = svgEl("g", {
       class: "airport-marker",
       id: `airport-${airport.id}`,
@@ -667,9 +651,14 @@ function clearSelection() {
 }
 
 function notifySelectionChange() {
-  if (typeof window.AeroRutasAPI?.onSelectionChange === "function") {
-    window.AeroRutasAPI.onSelectionChange();
-  }
+  selectionListeners.forEach((fn) => {
+    try {
+      fn();
+    } catch (err) {
+      console.error("aerorutas:selection listener", err);
+    }
+  });
+  window.dispatchEvent(new CustomEvent("aerorutas:selection"));
 }
 
 function updateSelection() {
@@ -1159,5 +1148,7 @@ window.AeroRutasAPI = {
   },
   getRouteSummary,
   showToast,
-  onSelectionChange: null,
+  addSelectionListener(fn) {
+    if (typeof fn === "function") selectionListeners.push(fn);
+  },
 };

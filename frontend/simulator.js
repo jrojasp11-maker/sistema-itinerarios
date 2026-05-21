@@ -3,39 +3,46 @@
  */
 (function initFlightSimulator() {
   const DURATION_MS = 7500;
+  const DURATION_REDUCED_MS = 2800;
   let planeGroup = null;
   let playing = false;
   let rafId = 0;
   let startTime = 0;
   let pausedProgress = 0;
   let btn = null;
+  let booted = false;
   const prefersReduced = window.matchMedia("(prefers-reduced-motion: reduce)");
 
-  function boot() {
-    if (!window.AeroRutasAPI) {
-      requestAnimationFrame(boot);
+  function whenReady(fn) {
+    if (window.AeroRutasAPI) {
+      fn();
       return;
     }
+    window.addEventListener("aerorutas:ready", () => fn(), { once: true });
+  }
+
+  function durationMs() {
+    return prefersReduced.matches ? DURATION_REDUCED_MS : DURATION_MS;
+  }
+
+  function boot() {
+    if (booted) return;
     planeGroup = document.getElementById("flightPlane");
     btn = document.getElementById("toggleFlightSim");
     if (!planeGroup || !btn) return;
+    booted = true;
 
     btn.addEventListener("click", togglePlayback);
-    prefersReduced.addEventListener("change", onReducedChange);
+    prefersReduced.addEventListener("change", () => {
+      if (playing) stopSimulation(true);
+      updateButtonState();
+    });
 
-    const api = window.AeroRutasAPI;
-    const prev = api.onSelectionChange;
-    api.onSelectionChange = () => {
-      if (typeof prev === "function") prev();
+    window.AeroRutasAPI.addSelectionListener(() => {
       stopSimulation(true);
       updateButtonState();
-    };
+    });
 
-    updateButtonState();
-  }
-
-  function onReducedChange() {
-    if (prefersReduced.matches) stopSimulation(true);
     updateButtonState();
   }
 
@@ -45,7 +52,7 @@
 
   function hasRoute() {
     const line = getRouteLine();
-    return line?.classList.contains("visible") && line.getAttribute("d");
+    return Boolean(line?.getAttribute("d") && line.classList.contains("visible"));
   }
 
   function updateButtonState() {
@@ -55,9 +62,6 @@
     if (!routeReady) {
       btn.setAttribute("aria-pressed", "false");
       btn.title = "Selecciona origen y destino para simular";
-    } else if (prefersReduced.matches) {
-      btn.title = "Movimiento reducido activo: simulación deshabilitada";
-      btn.disabled = true;
     } else {
       btn.title = playing ? "Pausar simulación" : "Simular vuelo sobre la ruta";
     }
@@ -77,12 +81,13 @@
       `translate(${point.x}, ${point.y}) rotate(${angle + 90})`,
     );
     planeGroup.classList.add("visible");
+    planeGroup.removeAttribute("aria-hidden");
   }
 
   function tick(now) {
     if (!playing) return;
     const elapsed = now - startTime;
-    const progress = pausedProgress + elapsed / DURATION_MS;
+    const progress = pausedProgress + elapsed / durationMs();
     if (progress >= 1) {
       placePlaneAt(1);
       pausedProgress = 0;
@@ -96,7 +101,7 @@
   }
 
   function startSimulation() {
-    if (!hasRoute() || prefersReduced.matches) return;
+    if (!hasRoute()) return;
     stopSimulation(false);
     playing = true;
     startTime = performance.now();
@@ -111,6 +116,7 @@
     if (hidePlane) {
       pausedProgress = 0;
       planeGroup?.classList.remove("visible");
+      planeGroup?.setAttribute("aria-hidden", "true");
       planeGroup?.removeAttribute("transform");
     }
     btn?.setAttribute("aria-pressed", "false");
@@ -118,13 +124,13 @@
   }
 
   function togglePlayback() {
-    if (!hasRoute() || prefersReduced.matches) return;
+    if (!hasRoute()) return;
     if (playing) {
       const line = getRouteLine();
       const len = line?.getTotalLength() || 0;
       if (len) {
         const elapsed = performance.now() - startTime;
-        pausedProgress = Math.min(1, pausedProgress + elapsed / DURATION_MS);
+        pausedProgress = Math.min(1, pausedProgress + elapsed / durationMs());
       }
       playing = false;
       cancelAnimationFrame(rafId);
@@ -135,9 +141,13 @@
     startSimulation();
   }
 
+  function start() {
+    whenReady(boot);
+  }
+
   if (document.readyState === "loading") {
-    document.addEventListener("DOMContentLoaded", boot);
+    document.addEventListener("DOMContentLoaded", start);
   } else {
-    boot();
+    start();
   }
 })();
