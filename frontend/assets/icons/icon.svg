@@ -1,0 +1,23 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512">
+  <defs>
+    <linearGradient id="bg-grad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#101622" />
+      <stop offset="100%" stop-color="#06080f" />
+    </linearGradient>
+    <linearGradient id="gold-grad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#fcd34d" />
+      <stop offset="100%" stop-color="#f59e0b" />
+    </linearGradient>
+    <filter id="glow" x="-20%" y="-20%" width="140%" height="140%">
+      <feGaussianBlur stdDeviation="16" result="blur" />
+      <feComposite in="SourceGraphic" in2="blur" operator="over" />
+    </filter>
+  </defs>
+  
+  <rect width="512" height="512" rx="112" fill="url(#bg-grad)" />
+  <rect width="508" height="508" x="2" y="2" rx="110" fill="none" stroke="rgba(245, 158, 11, 0.25)" stroke-width="4" />
+  
+  <g transform="translate(256, 256) rotate(45) translate(-256, -256)" filter="url(#glow)">
+    <path d="M256,128 C264,128 268,132 268,140 L268,230 L360,290 L360,314 L268,284 L268,360 L296,384 L296,400 L256,388 L216,400 L216,384 L244,360 L244,284 L152,314 L152,290 L244,230 L244,140 C244,132 248,128 256,128 Z" fill="url(#gold-grad)" />
+  </g>
+</svg>

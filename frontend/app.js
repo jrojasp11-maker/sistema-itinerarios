@@ -895,16 +895,17 @@ function setTab(name) {
     tab.classList.toggle("active", active);
     tab.setAttribute("aria-selected", String(active));
   });
-  const activePanel = name === "new" ? $("#panelNew") : $("#panelList");
+  const activePanel = name === "new" ? $("#panelNew") : name === "list" ? $("#panelList") : $("#panelMetrics");
   $("#panelNew").classList.toggle("active", name === "new");
   $("#panelList").classList.toggle("active", name === "list");
+  if ($("#panelMetrics")) $("#panelMetrics").classList.toggle("active", name === "metrics");
   if (activePanel) {
     activePanel.classList.remove("tab-enter");
     void activePanel.offsetWidth;
     activePanel.classList.add("tab-enter");
   }
   updateTabIndicator();
-  if (name === "list") loadItineraries();
+  if (name === "list" || name === "metrics") loadItineraries();
   refreshIcons();
 }
 
@@ -1016,6 +1017,9 @@ async function loadItineraries() {
     if (!response.ok) throw new Error(`HTTP ${response.status}`);
     const items = await response.json();
     renderItineraries(items, filter);
+    if (typeof window.onItinerariesLoaded === "function") {
+      window.onItinerariesLoaded(items);
+    }
   } catch {
     els.listCount.textContent = "";
     els.itineraryList.innerHTML = `
@@ -1023,6 +1027,9 @@ async function loadItineraries() {
         <p>No fue posible cargar los itinerarios. Verifica que el servicio en el puerto 8002 esté activo.</p>
         <button type="button" class="retry-button" id="retryList">Reintentar</button>
       </div>`;
+    if (typeof window.onItinerariesLoaded === "function") {
+      window.onItinerariesLoaded([]);
+    }
   }
   refreshIcons();
 }
