@@ -5,12 +5,11 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>AeroRutas | Itinerarios empresariales</title>
   <meta name="description" content="Itinerarios aéreos empresariales en Colombia — mapa interactivo, rutas y registro." />
-  <meta name="theme-color" content="#5eb3ff" media="(prefers-color-scheme: light)" />
   <meta name="theme-color" content="#0c1018" />
   <link rel="manifest" href="./manifest.webmanifest" />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:ital,wght@0,400;0,500;0,600;0,700;1,400&family=Source+Serif+4:ital,opsz,wght@0,8..60,500;0,8..60,600;0,8..60,700;1,8..60,400&display=swap" rel="stylesheet" />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet" />
   <link rel="stylesheet" href="./styles.css" />
   <link
     rel="stylesheet"
@@ -47,9 +46,6 @@
         <a class="doc-link" id="linkAirportDocs" href="#" target="_blank" rel="noopener noreferrer" title="OpenAPI aeropuertos">:8001</a>
         <a class="doc-link" id="linkItineraryDocs" href="#" target="_blank" rel="noopener noreferrer" title="OpenAPI itinerarios">:8002</a>
       </nav>
-      <button type="button" class="theme-toggle" id="themeToggle" aria-label="Cambiar tema claro/oscuro" title="Tema">
-        <span class="theme-icon" aria-hidden="true">◐</span>
-      </button>
     </div>
   </header>
 
@@ -86,26 +82,16 @@
             Todos
           </button>
         </div>
+        <span class="toolbar-sep" aria-hidden="true"></span>
+        <div class="region-filter" role="group" aria-label="Filtro por región" id="regionFilter">
+          <button type="button" class="region-btn active" data-region="all" aria-pressed="true">Todas</button>
+          <button type="button" class="region-btn" data-region="Andina" aria-pressed="false">Andina</button>
+          <button type="button" class="region-btn" data-region="Caribe" aria-pressed="false">Caribe</button>
+          <button type="button" class="region-btn" data-region="Pacífico" aria-pressed="false">Pacífico</button>
+          <button type="button" class="region-btn" data-region="Orinoquía" aria-pressed="false">Orinoquía</button>
+          <button type="button" class="region-btn" data-region="Amazonía" aria-pressed="false">Amazonía</button>
+        </div>
         <span class="map-filter-count" id="mapFilterCount" aria-live="polite"></span>
-        <button
-          type="button"
-          class="map-tool-btn"
-          id="toggleMiniMap"
-          aria-pressed="false"
-          title="Vista satélite (mini-mapa)"
-        >
-          Satélite
-        </button>
-        <button
-          type="button"
-          class="map-tool-btn"
-          id="toggleFlightSim"
-          aria-pressed="false"
-          title="Simular vuelo sobre la ruta"
-          disabled
-        >
-          Simular vuelo
-        </button>
       </div>
 
       <aside class="mini-map-panel" id="miniMapPanel" hidden aria-label="Mini-mapa satélite de Colombia">
@@ -125,18 +111,19 @@
       <svg id="mapSvg" viewBox="0 0 470 680" preserveAspectRatio="xMidYMid meet" role="img" aria-label="Mapa interactivo de aeropuertos de Colombia">
         <defs>
           <linearGradient id="routeGradient" x1="0%" y1="0%" x2="100%" y2="0%">
-            <stop offset="0%" stop-color="#5eb3ff" />
-            <stop offset="100%" stop-color="#7ee8c8" />
+            <stop offset="0%" stop-color="#f59e0b" />
+            <stop offset="50%" stop-color="#fcd34d" />
+            <stop offset="100%" stop-color="#f59e0b" />
           </linearGradient>
           <filter id="markerGlow" x="-80%" y="-80%" width="260%" height="260%">
-            <feGaussianBlur stdDeviation="2" result="blur" />
+            <feGaussianBlur stdDeviation="2.5" result="blur" />
             <feMerge>
               <feMergeNode in="blur" />
               <feMergeNode in="SourceGraphic" />
             </feMerge>
           </filter>
           <filter id="softGlow">
-            <feGaussianBlur stdDeviation="2.5" result="blur" />
+            <feGaussianBlur stdDeviation="3" result="blur" />
             <feMerge>
               <feMergeNode in="blur" />
               <feMergeNode in="SourceGraphic" />
@@ -169,11 +156,11 @@
         </g>
         <path id="routeShadow" class="route-shadow" />
         <path id="routeLine" class="route-line" />
+        <circle id="routePulse" class="route-pulse" r="5" opacity="0" />
+        <g id="airportLayer"></g>
         <g id="flightPlane" class="flight-plane" aria-hidden="true">
           <path d="M0 -9 L5 4 L0 2 L-5 4 Z" fill="currentColor" />
         </g>
-        <circle id="routePulse" class="route-pulse" r="5" opacity="0" />
-        <g id="airportLayer"></g>
       </svg>
 
       <div class="map-tooltip" id="mapTooltip" role="status" aria-live="polite">
@@ -304,15 +291,6 @@
           </form>
         </div>
 
-        <div class="export-actions" data-reveal aria-label="Exportar itinerario">
-          <button type="button" class="ghost-button" id="exportPng" title="Descargar mapa y resumen como PNG">
-            Exportar PNG
-          </button>
-          <button type="button" class="ghost-button" id="exportPdf" title="Descargar PDF con mapa y datos">
-            Exportar PDF
-          </button>
-        </div>
-
         <div class="form-actions">
           <button class="primary-button" id="saveButton" type="submit" form="itineraryForm">
             <span>Guardar itinerario</span>
@@ -333,6 +311,17 @@
           </button>
         </div>
 
+        <div class="export-actions" data-reveal style="margin-bottom: 1.5rem; justify-content: flex-start;" aria-label="Exportar itinerario">
+          <button type="button" class="ghost-button" id="exportPng" title="Descargar mapa y resumen como PNG">
+            <span class="icon-fallback">🖼️</span>
+            <i data-lucide="image"></i> Exportar PNG
+          </button>
+          <button type="button" class="ghost-button" id="exportPdf" title="Descargar PDF con mapa y datos">
+            <span class="icon-fallback">📄</span>
+            <i data-lucide="file-text"></i> Exportar PDF
+          </button>
+        </div>
+
         <div class="filters" data-reveal>
           <label class="field compact">
             <span>Filtrar por fecha</span>
@@ -347,36 +336,12 @@
     </aside>
   </main>
 
-  <button type="button" class="chat-fab" id="chatFab" aria-expanded="false" aria-controls="chatPanel" title="Asistente de rutas">
-    <span aria-hidden="true">✦</span>
-    <span class="sr-only">Abrir asistente</span>
-  </button>
-
-  <section class="chat-panel" id="chatPanel" hidden aria-label="Asistente de itinerarios">
-    <header class="chat-head">
-      <div>
-        <span class="eyebrow">Asistente</span>
-        <h3>Rutas en español</h3>
-      </div>
-      <button type="button" class="icon-button subtle" id="chatClose" aria-label="Cerrar asistente">×</button>
-    </header>
-    <div class="chat-thread" id="chatThread" role="log" aria-live="polite"></div>
-    <footer class="chat-foot">
-      <label class="sr-only" for="chatInput">Mensaje</label>
-      <textarea id="chatInput" rows="2" placeholder="Ej.: BOG → CLO el viernes"></textarea>
-      <button type="button" class="primary-button compact" id="chatSend">Enviar</button>
-    </footer>
-  </section>
-
   <script src="https://unpkg.com/lucide@0.487.0/dist/umd/lucide.min.js" defer></script>
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin="" defer></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js" defer crossorigin="anonymous"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.2/jspdf.umd.min.js" defer crossorigin="anonymous"></script>
   <script src="./motion.js" defer></script>
   <script src="./app.js" defer></script>
-  <script src="./minimap.js" defer></script>
-  <script src="./simulator.js" defer></script>
-  <script src="./chat.js" defer></script>
   <script src="./export.js" defer></script>
 </body>
 </html>

@@ -48,23 +48,59 @@ const principalSeeds = [
 const airportCatalog = new Map();
 
 const LABEL_OFFSETS = {
-  BOG: { dx: 0, dy: -16 },
-  MDE: { dx: 14, dy: -14 },
-  EOH: { dx: -16, dy: 8 },
-  PEI: { dx: -14, dy: -12 },
-  AXM: { dx: -12, dy: 6 },
-  MZL: { dx: 12, dy: 4 },
-  CLO: { dx: -14, dy: 10 },
-  BGA: { dx: 12, dy: -10 },
-  CUC: { dx: 10, dy: -12 },
+  BOG: { dx: 0, dy: -18 },
+  MDE: { dx: 16, dy: -16 },
+  EOH: { dx: -18, dy: 10 },
+  PEI: { dx: -16, dy: -14 },
+  AXM: { dx: -14, dy: 8 },
+  MZL: { dx: 14, dy: 6 },
+  CLO: { dx: -16, dy: 12 },
+  BGA: { dx: 14, dy: -12 },
+  CUC: { dx: 12, dy: -14 },
+  CTG: { dx: 12, dy: -14 },
+  BAQ: { dx: -14, dy: -12 },
+  SMR: { dx: 10, dy: -14 },
+  LET: { dx: 0, dy: 14 },
+  VVC: { dx: -12, dy: 10 },
 };
 
 const RECENT_ROUTES_KEY = "aerorutas_recent_routes";
-const THEME_KEY = "aerorutas_theme";
+const selectionListeners = [];
 const CRUISE_KMH = 750;
 const ROUTING_FACTOR = 1.12;
 const GROUND_MINUTES = 25;
 
+const REGION_MAP = {
+  Andina: new Set(["BOG", "MDE", "EOH", "CLO", "BGA", "PEI", "AXM", "MZL", "CUC", "PSO", "VVC", "IBE", "CZU", "EJA", "MHF", "ACD"]),
+  Caribe: new Set(["BAQ", "CTG", "SMR", "MTR", "RCH", "SJE", "PVA", "ADN", "CSR", "OCV", "TLU", "BSC"]),
+  Pacífico: new Set(["TCO", "UIB", "BUN", "CRC", "NCI", "NVA"]),
+  Orinoquía: new Set(["VVC", "ACD", "ARQ", "PCR", "CPB", "EYP", "LPD", "SRO"]),
+  Amazonía: new Set(["LET", "MIT", "MQU", "API", "VAB", "PDA", "ECO"]),
+};
+
+function getAirportRegion(airportId) {
+  for (const [region, ids] of Object.entries(REGION_MAP)) {
+    if (ids.has(airportId)) return region;
+  }
+  return null;
+}
+
+function applyRegionFilter() {
+  airportCatalog.forEach((airport) => {
+    const marker = document.getElementById(`airport-${airport.id}`);
+    if (!marker) return;
+    if (state.activeRegion === "all") {
+      marker.classList.remove("region-dim");
+      marker.style.pointerEvents = "";
+    } else {
+      const region = getAirportRegion(airport.id);
+      const match = region === state.activeRegion;
+      marker.classList.toggle("region-dim", !match);
+      marker.style.pointerEvents = match ? "" : "none";
+    }
+  });
+  updateMapFilterCount(); // Reuse existing counter function
+}
 const state = {
   origin: null,
   destination: null,
@@ -72,6 +108,7 @@ const state = {
   lastSelected: null,
   mapMode: "principal",
   airportSearch: "",
+  activeRegion: "all",
 };
 
 const photoCache = new Map();
@@ -88,7 +125,6 @@ async function init() {
   setDefaultTravelDate();
   await Promise.all([loadMapConfig(), loadAirportMedia()]);
   initDocLinks();
-  initTheme();
   bindEvents();
   renderAirports();
   updateMapFilterCount();
@@ -103,6 +139,7 @@ async function init() {
   refreshIcons();
   updateTabIndicator();
   requestAnimationFrame(() => document.body.classList.add("app-ready"));
+  window.dispatchEvent(new CustomEvent("aerorutas:ready"));
 }
 
 function seedPrincipalAirports() {
@@ -250,7 +287,6 @@ function cacheElements() {
     recentChips: $("#recentChips"),
     linkAirportDocs: $("#linkAirportDocs"),
     linkItineraryDocs: $("#linkItineraryDocs"),
-    themeToggle: $("#themeToggle"),
     itineraryForm: $("#itineraryForm"),
     travelDate: $("#travelDate"),
     duration: $("#duration"),
@@ -298,6 +334,18 @@ function bindEvents() {
     button.addEventListener("click", () => setMapMode(button.dataset.mapMode));
   });
 
+  document.querySelectorAll(".region-btn").forEach((btn) => {
+    btn.addEventListener("click", () => {
+      state.activeRegion = btn.dataset.region;
+      document.querySelectorAll(".region-btn").forEach((b) => {
+        const active = b.dataset.region === state.activeRegion;
+        b.classList.toggle("active", active);
+        b.setAttribute("aria-pressed", String(active));
+      });
+      applyRegionFilter();
+    });
+  });
+
   els.airportSearch?.addEventListener("input", () => {
     state.airportSearch = els.airportSearch.value.trim().toLowerCase();
     paintSearchHighlights();
@@ -310,8 +358,6 @@ function bindEvents() {
     const entry = routes[Number(chip.dataset.recentIndex)];
     if (entry) applyRecentRoute(entry);
   });
-
-  els.themeToggle?.addEventListener("click", toggleTheme);
 
   document.addEventListener("keydown", (event) => {
     if (event.key === "Escape") clearSelection();
@@ -326,24 +372,6 @@ function bindEvents() {
 function initDocLinks() {
   if (els.linkAirportDocs) els.linkAirportDocs.href = `${API.airport}/docs`;
   if (els.linkItineraryDocs) els.linkItineraryDocs.href = `${API.itinerary}/docs`;
-}
-
-function initTheme() {
-  const saved = localStorage.getItem(THEME_KEY);
-  const prefersLight = window.matchMedia("(prefers-color-scheme: light)").matches;
-  const theme = saved || (prefersLight ? "light" : "dark");
-  document.documentElement.dataset.theme = theme === "light" ? "light" : "";
-}
-
-function toggleTheme() {
-  const isLight = document.documentElement.dataset.theme === "light";
-  if (isLight) {
-    document.documentElement.removeAttribute("data-theme");
-    localStorage.setItem(THEME_KEY, "dark");
-  } else {
-    document.documentElement.dataset.theme = "light";
-    localStorage.setItem(THEME_KEY, "light");
-  }
 }
 
 function loadRecentRoutes() {
@@ -531,7 +559,14 @@ function updateMapFilterCount() {
   const total = airportCatalog.size;
   const visible = getVisibleAirports().length;
 
-  if (state.mapMode === "all") {
+  if (state.activeRegion !== "all") {
+    const regionIds = REGION_MAP[state.activeRegion];
+    let count = 0;
+    airportCatalog.forEach((airport) => {
+      if (regionIds && regionIds.has(airport.id)) count++;
+    });
+    els.mapFilterCount.textContent = `${count} en ${state.activeRegion}`;
+  } else if (state.mapMode === "all") {
     if (total > principals) {
       els.mapFilterCount.textContent = `${visible} de ${total} aeropuertos`;
     } else {
@@ -584,7 +619,7 @@ function preloadAirportPhoto(airport) {
 function renderAirports() {
   els.airportLayer.innerHTML = "";
   getVisibleAirports().forEach((airport) => {
-    const offset = LABEL_OFFSETS[airport.id] || { dx: 0, dy: -14 };
+    const offset = LABEL_OFFSETS[airport.id] || { dx: 0, dy: -16 };
     const group = svgEl("g", {
       class: "airport-marker",
       id: `airport-${airport.id}`,
@@ -627,6 +662,7 @@ function renderAirports() {
   });
   paintMarkers();
   paintSearchHighlights();
+  applyRegionFilter();
 }
 
 function svgEl(tag, attrs) {
@@ -667,9 +703,14 @@ function clearSelection() {
 }
 
 function notifySelectionChange() {
-  if (typeof window.AeroRutasAPI?.onSelectionChange === "function") {
-    window.AeroRutasAPI.onSelectionChange();
-  }
+  selectionListeners.forEach((fn) => {
+    try {
+      fn();
+    } catch (err) {
+      console.error("aerorutas:selection listener", err);
+    }
+  });
+  window.dispatchEvent(new CustomEvent("aerorutas:selection"));
 }
 
 function updateSelection() {
@@ -1026,6 +1067,7 @@ async function loadItineraries() {
     const response = await fetchWithTimeout(url.toString(), {}, 7000);
     if (!response.ok) throw new Error(`HTTP ${response.status}`);
     const items = await response.json();
+    window.AeroRutasAPI.lastLoadedItineraries = items;
     renderItineraries(items, filter);
   } catch {
     els.listCount.textContent = "";
@@ -1159,5 +1201,7 @@ window.AeroRutasAPI = {
   },
   getRouteSummary,
   showToast,
-  onSelectionChange: null,
+  addSelectionListener(fn) {
+    if (typeof fn === "function") selectionListeners.push(fn);
+  },
 };
