@@ -573,10 +573,10 @@ button {
   opacity: 0;
   pointer-events: none;
   color: var(--gold);
-  filter: url(#markerGlow);
+  filter: drop-shadow(0 0 6px rgba(245, 158, 11, 0.8));
   transition: opacity 200ms ease;
+  z-index: 1000;
 }
-
 .flight-plane.visible {
   opacity: 1;
 }

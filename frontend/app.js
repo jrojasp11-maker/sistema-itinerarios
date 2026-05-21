@@ -70,6 +70,37 @@ const CRUISE_KMH = 750;
 const ROUTING_FACTOR = 1.12;
 const GROUND_MINUTES = 25;
 
+const REGION_MAP = {
+  Andina: new Set(["BOG", "MDE", "EOH", "CLO", "BGA", "PEI", "AXM", "MZL", "CUC", "PSO", "VVC", "IBE", "CZU", "EJA", "MHF", "ACD"]),
+  Caribe: new Set(["BAQ", "CTG", "SMR", "MTR", "RCH", "SJE", "PVA", "ADN", "CSR", "OCV", "TLU", "BSC"]),
+  Pacífico: new Set(["TCO", "UIB", "BUN", "CRC", "NCI", "NVA"]),
+  Orinoquía: new Set(["VVC", "ACD", "ARQ", "PCR", "CPB", "EYP", "LPD", "SRO"]),
+  Amazonía: new Set(["LET", "MIT", "MQU", "API", "VAB", "PDA", "ECO"]),
+};
+
+function getAirportRegion(airportId) {
+  for (const [region, ids] of Object.entries(REGION_MAP)) {
+    if (ids.has(airportId)) return region;
+  }
+  return null;
+}
+
+function applyRegionFilter() {
+  airportCatalog.forEach((airport) => {
+    const marker = document.getElementById(`airport-${airport.id}`);
+    if (!marker) return;
+    if (state.activeRegion === "all") {
+      marker.classList.remove("region-dim");
+      marker.style.pointerEvents = "";
+    } else {
+      const region = getAirportRegion(airport.id);
+      const match = region === state.activeRegion;
+      marker.classList.toggle("region-dim", !match);
+      marker.style.pointerEvents = match ? "" : "none";
+    }
+  });
+  updateMapFilterCount(); // Reuse existing counter function
+}
 const state = {
   origin: null,
   destination: null,
@@ -77,6 +108,7 @@ const state = {
   lastSelected: null,
   mapMode: "principal",
   airportSearch: "",
+  activeRegion: "all",
 };
 
 const photoCache = new Map();
@@ -302,6 +334,18 @@ function bindEvents() {
     button.addEventListener("click", () => setMapMode(button.dataset.mapMode));
   });
 
+  document.querySelectorAll(".region-btn").forEach((btn) => {
+    btn.addEventListener("click", () => {
+      state.activeRegion = btn.dataset.region;
+      document.querySelectorAll(".region-btn").forEach((b) => {
+        const active = b.dataset.region === state.activeRegion;
+        b.classList.toggle("active", active);
+        b.setAttribute("aria-pressed", String(active));
+      });
+      applyRegionFilter();
+    });
+  });
+
   els.airportSearch?.addEventListener("input", () => {
     state.airportSearch = els.airportSearch.value.trim().toLowerCase();
     paintSearchHighlights();
@@ -515,7 +559,14 @@ function updateMapFilterCount() {
   const total = airportCatalog.size;
   const visible = getVisibleAirports().length;
 
-  if (state.mapMode === "all") {
+  if (state.activeRegion !== "all") {
+    const regionIds = REGION_MAP[state.activeRegion];
+    let count = 0;
+    airportCatalog.forEach((airport) => {
+      if (regionIds && regionIds.has(airport.id)) count++;
+    });
+    els.mapFilterCount.textContent = `${count} en ${state.activeRegion}`;
+  } else if (state.mapMode === "all") {
     if (total > principals) {
       els.mapFilterCount.textContent = `${visible} de ${total} aeropuertos`;
     } else {
@@ -611,6 +662,7 @@ function renderAirports() {
   });
   paintMarkers();
   paintSearchHighlights();
+  applyRegionFilter();
 }
 
 function svgEl(tag, attrs) {
@@ -895,17 +947,16 @@ function setTab(name) {
     tab.classList.toggle("active", active);
     tab.setAttribute("aria-selected", String(active));
   });
-  const activePanel = name === "new" ? $("#panelNew") : name === "list" ? $("#panelList") : $("#panelMetrics");
+  const activePanel = name === "new" ? $("#panelNew") : $("#panelList");
   $("#panelNew").classList.toggle("active", name === "new");
   $("#panelList").classList.toggle("active", name === "list");
-  if ($("#panelMetrics")) $("#panelMetrics").classList.toggle("active", name === "metrics");
   if (activePanel) {
     activePanel.classList.remove("tab-enter");
     void activePanel.offsetWidth;
     activePanel.classList.add("tab-enter");
   }
   updateTabIndicator();
-  if (name === "list" || name === "metrics") loadItineraries();
+  if (name === "list") loadItineraries();
   refreshIcons();
 }
 
@@ -1017,9 +1068,6 @@ async function loadItineraries() {
     if (!response.ok) throw new Error(`HTTP ${response.status}`);
     const items = await response.json();
     renderItineraries(items, filter);
-    if (typeof window.onItinerariesLoaded === "function") {
-      window.onItinerariesLoaded(items);
-    }
   } catch {
     els.listCount.textContent = "";
     els.itineraryList.innerHTML = `
@@ -1027,9 +1075,6 @@ async function loadItineraries() {
         <p>No fue posible cargar los itinerarios. Verifica que el servicio en el puerto 8002 esté activo.</p>
         <button type="button" class="retry-button" id="retryList">Reintentar</button>
       </div>`;
-    if (typeof window.onItinerariesLoaded === "function") {
-      window.onItinerariesLoaded([]);
-    }
   }
   refreshIcons();
 }

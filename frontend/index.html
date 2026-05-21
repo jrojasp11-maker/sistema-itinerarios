@@ -218,7 +218,6 @@
         <span class="tab-indicator" id="tabIndicator" aria-hidden="true"></span>
         <button class="tab active" type="button" role="tab" aria-selected="true" data-tab="new">Nuevo</button>
         <button class="tab" type="button" role="tab" aria-selected="false" data-tab="list">Itinerarios</button>
-        <button class="tab" type="button" role="tab" aria-selected="false" data-tab="metrics">Métricas</button>
       </div>
 
       <div class="toast floating-toast" id="toast" role="status" aria-live="polite"></div>
@@ -311,15 +310,6 @@
           </form>
         </div>
 
-        <div class="export-actions" data-reveal aria-label="Exportar itinerario">
-          <button type="button" class="ghost-button" id="exportPng" title="Descargar mapa y resumen como PNG">
-            Exportar PNG
-          </button>
-          <button type="button" class="ghost-button" id="exportPdf" title="Descargar PDF con mapa y datos">
-            Exportar PDF
-          </button>
-        </div>
-
         <div class="form-actions">
           <button class="primary-button" id="saveButton" type="submit" form="itineraryForm">
             <span>Guardar itinerario</span>
@@ -340,6 +330,17 @@
           </button>
         </div>
 
+        <div class="export-actions" data-reveal style="margin-bottom: 1.5rem; justify-content: flex-start;" aria-label="Exportar itinerario">
+          <button type="button" class="ghost-button" id="exportPng" title="Descargar mapa y resumen como PNG">
+            <span class="icon-fallback">🖼️</span>
+            <i data-lucide="image"></i> Exportar PNG
+          </button>
+          <button type="button" class="ghost-button" id="exportPdf" title="Descargar PDF con mapa y datos">
+            <span class="icon-fallback">📄</span>
+            <i data-lucide="file-text"></i> Exportar PDF
+          </button>
+        </div>
+
         <div class="filters" data-reveal>
           <label class="field compact">
             <span>Filtrar por fecha</span>
@@ -350,27 +351,6 @@
 
         <div class="list-count" id="listCount"></div>
         <div class="itinerary-list" id="itineraryList"></div>
-      </section>
-
-      <!-- Pestaña Métricas -->
-      <section class="tab-panel" id="panelMetrics" role="tabpanel">
-        <div class="metrics-header" data-reveal>
-          <div>
-            <span class="section-label">Analytics</span>
-            <h3>Métricas de vuelo</h3>
-          </div>
-          <button class="icon-button" id="refreshMetrics" type="button" title="Actualizar métricas" aria-label="Actualizar métricas">
-            <span class="icon-fallback">↻</span>
-            <i data-lucide="refresh-cw"></i>
-          </button>
-        </div>
-        <div class="metrics-scroll" id="metricsContent">
-          <!-- Renderizado dinámicamente por app.js -->
-          <div class="metrics-empty">
-            <div class="metrics-icon">✈️</div>
-            <p>Guarda itinerarios para ver tus métricas de vuelo.</p>
-          </div>
-        </div>
       </section>
     </aside>
   </main>
@@ -384,6 +364,5 @@
   <script src="./minimap.js" defer></script>
   <script src="./simulator.js" defer></script>
   <script src="./export.js" defer></script>
-  <script src="./metrics.js" defer></script>
 </body>
 </html>

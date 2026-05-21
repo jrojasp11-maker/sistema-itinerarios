@@ -78,8 +78,9 @@
     const angle = (Math.atan2(ahead.y - point.y, ahead.x - point.x) * 180) / Math.PI;
     planeGroup.setAttribute(
       "transform",
-      `translate(${point.x}, ${point.y}) rotate(${angle + 90})`,
+      `translate(${point.x}, ${point.y}) rotate(${angle + 90}) scale(1.5)`,
     );
+    planeGroup.style.display = "block";
     planeGroup.classList.add("visible");
     planeGroup.removeAttribute("aria-hidden");
   }
@@ -115,11 +116,13 @@
     cancelAnimationFrame(rafId);
     if (hidePlane) {
       pausedProgress = 0;
-      planeGroup?.classList.remove("visible");
-      planeGroup?.setAttribute("aria-hidden", "true");
-      planeGroup?.removeAttribute("transform");
+      if (planeGroup) {
+        planeGroup.classList.remove("visible");
+        planeGroup.setAttribute("aria-hidden", "true");
+        planeGroup.style.display = "none";
+      }
     }
-    btn?.setAttribute("aria-pressed", "false");
+    if (btn) btn.setAttribute("aria-pressed", "false");
     updateButtonState();
   }
 
