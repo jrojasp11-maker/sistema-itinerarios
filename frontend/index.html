@@ -1,0 +1,319 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>AeroRutas | Itinerarios empresariales</title>
+  <meta name="description" content="Itinerarios aéreos empresariales en Colombia — mapa interactivo, rutas y registro." />
+  <meta name="theme-color" content="#b6ff36" />
+  <link rel="manifest" href="./manifest.webmanifest" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;0,9..40,800;1,9..40,400&family=Syne:wght@600;700;800&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="./styles.css" />
+</head>
+<body>
+  <div class="ambient" aria-hidden="true">
+    <span class="orb orb-lime"></span>
+    <span class="orb orb-cyan"></span>
+    <span class="orb orb-amber"></span>
+  </div>
+
+  <header class="topbar">
+    <a class="brand" href="#" aria-label="AeroRutas">
+      <span class="brand-mark">AR</span>
+      <span>
+        <strong>AeroRutas</strong>
+        <small>Itinerarios empresariales</small>
+      </span>
+    </a>
+
+    <div class="system-strip" aria-label="Estado de servicios">
+      <span class="service-chip" id="airportHealth" title="Servicio de aeropuertos">
+        <span class="pulse-dot" aria-hidden="true"></span>
+        <span class="chip-label">Aeropuertos</span>
+        <span class="chip-status" aria-live="polite"></span>
+      </span>
+      <span class="service-chip" id="itineraryHealth" title="Servicio de itinerarios">
+        <span class="pulse-dot" aria-hidden="true"></span>
+        <span class="chip-label">Itinerarios</span>
+        <span class="chip-status" aria-live="polite"></span>
+      </span>
+      <time id="clock" class="clock" aria-label="Hora local"></time>
+      <nav class="doc-links" aria-label="Documentación API">
+        <a class="doc-link" id="linkAirportDocs" href="#" target="_blank" rel="noopener noreferrer" title="OpenAPI aeropuertos">API :8001</a>
+        <a class="doc-link" id="linkItineraryDocs" href="#" target="_blank" rel="noopener noreferrer" title="OpenAPI itinerarios">API :8002</a>
+      </nav>
+      <button type="button" class="theme-toggle" id="themeToggle" aria-label="Cambiar tema claro/oscuro" title="Tema">◐</button>
+    </div>
+  </header>
+
+  <main class="app-shell">
+    <section class="map-stage" aria-label="Mapa de aeropuertos de Colombia">
+      <div class="map-title">
+        <span>Red Colombia</span>
+        <h1>AeroRutas</h1>
+      </div>
+
+      <p class="map-hint" id="mapHint">
+        <strong>Paso 1:</strong> elige el aeropuerto de origen.
+        <strong>Paso 2:</strong> elige el destino. La ruta se dibujará automáticamente.
+      </p>
+
+      <div class="map-filter" role="group" aria-label="Vista de aeropuertos en el mapa">
+        <label class="airport-search" for="airportSearch">
+          <span class="sr-only">Buscar aeropuerto</span>
+          <input
+            id="airportSearch"
+            type="search"
+            placeholder="Buscar IATA o ciudad…"
+            autocomplete="off"
+            spellcheck="false"
+            aria-describedby="mapFilterCount"
+          />
+        </label>
+        <button type="button" class="map-filter-btn active" data-map-mode="principal" aria-pressed="true">
+          Principales
+        </button>
+        <button type="button" class="map-filter-btn" data-map-mode="all" aria-pressed="false">
+          Todos
+        </button>
+        <span class="map-filter-count" id="mapFilterCount" aria-live="polite"></span>
+      </div>
+
+      <ul class="map-legend" aria-label="Leyenda del mapa">
+        <li><span class="legend-dot origin"></span> Origen</li>
+        <li><span class="legend-dot destination"></span> Destino</li>
+        <li><span class="legend-dot route"></span> Ruta activa</li>
+      </ul>
+
+      <svg id="mapSvg" viewBox="0 0 470 680" preserveAspectRatio="xMidYMid meet" role="img" aria-label="Mapa interactivo de aeropuertos de Colombia">
+        <defs>
+          <linearGradient id="routeGradient" x1="0%" y1="0%" x2="100%" y2="0%">
+            <stop offset="0%" stop-color="#b6ff36" />
+            <stop offset="50%" stop-color="#7dffb8" />
+            <stop offset="100%" stop-color="#38e4d2" />
+          </linearGradient>
+          <linearGradient id="routeGradientAnim" gradientUnits="userSpaceOnUse" x1="0" y1="0" x2="120" y2="0">
+            <stop offset="0%" stop-color="#b6ff36">
+              <animate attributeName="stop-color" values="#b6ff36;#38e4d2;#b6ff36" dur="3s" repeatCount="indefinite" />
+            </stop>
+            <stop offset="100%" stop-color="#38e4d2">
+              <animate attributeName="stop-color" values="#38e4d2;#b6ff36;#38e4d2" dur="3s" repeatCount="indefinite" />
+            </stop>
+          </linearGradient>
+          <filter id="markerGlow" x="-80%" y="-80%" width="260%" height="260%">
+            <feGaussianBlur stdDeviation="2.5" result="blur" />
+            <feMerge>
+              <feMergeNode in="blur" />
+              <feMergeNode in="SourceGraphic" />
+            </feMerge>
+          </filter>
+          <filter id="softGlow">
+            <feGaussianBlur stdDeviation="3" result="blur" />
+            <feMerge>
+              <feMergeNode in="blur" />
+              <feMergeNode in="SourceGraphic" />
+            </feMerge>
+          </filter>
+          <clipPath id="colombiaClip">
+            <path id="colombiaOutlinePath" />
+          </clipPath>
+        </defs>
+
+        <g class="grid-lines" aria-hidden="true">
+          <path d="M0 136H470 M0 272H470 M0 408H470 M0 544H470" />
+          <path d="M94 0V680 M188 0V680 M282 0V680 M376 0V680" />
+        </g>
+
+        <g class="country-map" aria-label="Mapa de Colombia">
+          <g clip-path="url(#colombiaClip)">
+            <image
+              class="country-map-terrain"
+              href="./assets/colombia-map.svg"
+              x="0"
+              y="0"
+              width="470"
+              height="680"
+              preserveAspectRatio="xMidYMid meet"
+            />
+          </g>
+          <path id="colombiaBorderGlow" class="country-border-glow" fill="none" />
+          <path id="colombiaBorder" class="country-border" fill="none" />
+        </g>
+        <path id="routeShadow" class="route-shadow" />
+        <path id="routeLine" class="route-line" />
+        <circle id="routePulse" class="route-pulse" r="5" opacity="0" />
+        <g id="airportLayer"></g>
+      </svg>
+
+      <div class="map-tooltip" id="mapTooltip" role="status" aria-live="polite">
+        <img id="tooltipPhoto" class="tooltip-photo" alt="" width="200" height="112" loading="lazy" hidden />
+        <div class="tooltip-body">
+          <strong id="tooltipCode"></strong>
+          <span id="tooltipName"></span>
+        </div>
+      </div>
+
+      <div class="selection-dock" id="selectionDock">
+        <div>
+          <small>Origen</small>
+          <strong id="dockOrigin">Sin seleccionar</strong>
+        </div>
+        <i data-lucide="arrow-right"></i>
+        <div>
+          <small>Destino</small>
+          <strong id="dockDestination">Sin seleccionar</strong>
+        </div>
+        <button class="icon-button subtle" id="clearSelection" type="button" title="Limpiar ruta" aria-label="Limpiar ruta">
+          <span class="icon-fallback">×</span>
+          <i data-lucide="x"></i>
+        </button>
+      </div>
+    </section>
+
+    <aside class="workspace" aria-label="Panel de itinerarios">
+      <section class="cover">
+        <img src="https://images.unsplash.com/photo-1529074963764-98f45c47344b?auto=format&fit=crop&w=900&q=80" alt="Avión en pista" />
+        <div>
+          <span>Operación aérea</span>
+          <h2>Vuelos corporativos</h2>
+        </div>
+      </section>
+
+      <div class="tabbar" role="tablist" aria-label="Secciones">
+        <span class="tab-indicator" id="tabIndicator" aria-hidden="true"></span>
+        <button class="tab active" type="button" role="tab" aria-selected="true" data-tab="new">Nuevo</button>
+        <button class="tab" type="button" role="tab" aria-selected="false" data-tab="list">Itinerarios</button>
+      </div>
+
+      <div class="toast floating-toast" id="toast" role="status" aria-live="polite"></div>
+
+      <section class="tab-panel active" id="panelNew" role="tabpanel">
+        <div class="panel-scroll">
+          <section class="airport-spotlight" id="airportSpotlight" hidden aria-label="Vista del aeropuerto seleccionado">
+            <div class="spotlight-media">
+              <img id="spotlightPhoto" src="" alt="" loading="lazy" />
+              <div class="spotlight-badge" id="spotlightRole">Origen</div>
+            </div>
+            <div class="spotlight-copy">
+              <span class="spotlight-code" id="spotlightCode">---</span>
+              <h3 id="spotlightName">Selecciona un aeropuerto</h3>
+              <p id="spotlightCity">En el mapa verás la foto y los datos del aeropuerto.</p>
+            </div>
+          </section>
+
+          <section class="recent-routes" id="recentRoutes" hidden aria-label="Rutas recientes" data-reveal>
+            <span class="eyebrow">Recientes</span>
+            <div class="recent-chips" id="recentChips"></div>
+          </section>
+
+          <section class="route-summary" data-reveal>
+            <div class="airport-box origin">
+              <img class="airport-thumb" id="originThumb" alt="" hidden />
+              <small>Origen</small>
+              <strong id="originCode">---</strong>
+              <span id="originCity">Pendiente</span>
+            </div>
+            <div class="airport-box destination">
+              <img class="airport-thumb" id="destinationThumb" alt="" hidden />
+              <small>Destino</small>
+              <strong id="destinationCode">---</strong>
+              <span id="destinationCity">Pendiente</span>
+            </div>
+          </section>
+
+          <div class="route-bento" id="routeStats" hidden data-reveal aria-label="Estimación de ruta">
+            <article class="bento-cell bento-distance">
+              <span class="bento-label">Distancia</span>
+              <strong id="routeDistance">—</strong>
+              <small>línea recta</small>
+            </article>
+            <article class="bento-cell bento-flight">
+              <span class="bento-label">Vuelo est.</span>
+              <strong id="routeFlightTime">—</strong>
+              <small>~750 km/h + rodaje</small>
+            </article>
+          </div>
+
+          <form class="itinerary-form" id="itineraryForm">
+            <div class="form-grid">
+              <label class="field">
+                <span>Fecha de viaje</span>
+                <input id="travelDate" type="date" required />
+              </label>
+              <label class="field">
+                <span>Duración</span>
+                <input id="duration" type="number" min="1" placeholder="90" required />
+              </label>
+            </div>
+
+            <label class="field">
+              <span>Usuario ID</span>
+              <div class="inline-field">
+                <input id="userId" type="text" autocomplete="off" placeholder="550e8400-e29b-41d4-a716-446655440000" required />
+                <button class="icon-button" id="generateUuid" type="button" title="Generar UUID" aria-label="Generar UUID">
+                  <span class="icon-fallback">ID</span>
+                  <i data-lucide="sparkles"></i>
+                </button>
+              </div>
+            </label>
+
+            <fieldset class="status-field">
+              <legend>Estado</legend>
+              <label>
+                <input type="radio" name="status" value="Planeado" checked />
+                <span>Planeado</span>
+              </label>
+              <label>
+                <input type="radio" name="status" value="Completado" />
+                <span>Completado</span>
+              </label>
+              <label>
+                <input type="radio" name="status" value="Cancelado" />
+                <span>Cancelado</span>
+              </label>
+            </fieldset>
+
+          </form>
+        </div>
+
+        <div class="form-actions">
+          <button class="primary-button" id="saveButton" type="submit" form="itineraryForm" data-magnetic data-magnetic-strength="0.28">
+            <span>Guardar itinerario</span>
+            <i data-lucide="send"></i>
+          </button>
+        </div>
+      </section>
+
+      <section class="tab-panel" id="panelList" role="tabpanel">
+        <div class="list-header">
+          <div>
+            <span class="eyebrow">Registro</span>
+            <h3>Itinerarios</h3>
+          </div>
+          <button class="icon-button" id="refreshList" type="button" title="Actualizar" aria-label="Actualizar itinerarios">
+            <span class="icon-fallback">↻</span>
+            <i data-lucide="refresh-cw"></i>
+          </button>
+        </div>
+
+        <div class="filters">
+          <label class="field compact">
+            <span>Fecha</span>
+            <input id="dateFilter" type="date" />
+          </label>
+          <button class="ghost-button" id="clearFilter" type="button">Limpiar</button>
+        </div>
+
+        <div class="list-count" id="listCount"></div>
+        <div class="itinerary-list" id="itineraryList"></div>
+      </section>
+    </aside>
+  </main>
+
+  <script src="https://unpkg.com/lucide@0.487.0/dist/umd/lucide.min.js" defer></script>
+  <script src="./motion.js" defer></script>
+  <script src="./app.js" defer></script>
+</body>
+</html>

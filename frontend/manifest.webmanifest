@@ -1,0 +1,10 @@
+{
+  "name": "AeroRutas — Itinerarios empresariales",
+  "short_name": "AeroRutas",
+  "description": "Planificación de rutas aéreas corporativas en Colombia",
+  "lang": "es-CO",
+  "start_url": "./",
+  "display": "standalone",
+  "background_color": "#05070b",
+  "theme_color": "#b6ff36"
+}

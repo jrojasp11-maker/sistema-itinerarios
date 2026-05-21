@@ -1,0 +1,48 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.egg-info/
+.eggs/
+dist/
+build/
+.venv/
+venv/
+env/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+htmlcov/
+.coverage
+*.cover
+
+# Node (si se añade tooling)
+node_modules/
+npm-debug.log*
+.yarn/
+
+# Entorno y secretos
+.env
+.env.*
+!.env.example
+*.pem
+credentials.json
+secrets/
+
+# IDE / OS
+.idea/
+.vscode/
+*.swp
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Docker / datos locales
+pgdata/
+*.log
+
+# Build / caché frontend
+frontend/.cache/
+
+# Cursor (opcional — descomentar si no quieres versionar reglas locales)
+# .cursor/

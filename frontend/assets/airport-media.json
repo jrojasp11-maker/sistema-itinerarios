@@ -1,0 +1,77 @@
+{
+  "fallback": "https://images.unsplash.com/photo-1540962351504-03099e0a754b?auto=format&fit=crop&w=720&q=80",
+  "airports": {
+    "BOG": {
+      "wiki": "Aeropuerto_Internacional_El_Dorado",
+      "image": "https://upload.wikimedia.org/wikipedia/commons/thumb/8/8c/Aeropuerto_el_dorado_25.jpg/640px-Aeropuerto_el_dorado_25.jpg"
+    },
+    "MDE": {
+      "wiki": "Aeropuerto_Internacional_Jos%C3%A9_Mar%C3%ADa_C%C3%B3rdova",
+      "image": "https://upload.wikimedia.org/wikipedia/commons/thumb/4/4e/Aeropuerto_Jose_Maria_Cordova.jpg/640px-Aeropuerto_Jose_Maria_Cordova.jpg"
+    },
+    "CLO": {
+      "wiki": "Aeropuerto_Internacional_Alfonso_Bonilla_Arag%C3%B3n",
+      "image": "https://upload.wikimedia.org/wikipedia/commons/thumb/9/9f/Aeropuerto_alfonso_bonilla_aragon.jpg/640px-Aeropuerto_alfonso_bonilla_aragon.jpg"
+    },
+    "CTG": {
+      "wiki": "Aeropuerto_Internacional_Rafael_N%C3%BA%C3%B1ez",
+      "image": "https://upload.wikimedia.org/wikipedia/commons/thumb/5/5a/Aeropuerto_Rafael_Nunez.jpg/640px-Aeropuerto_Rafael_Nunez.jpg"
+    },
+    "BAQ": {
+      "wiki": "Aeropuerto_Internacional_Ernesto_Cortissoz",
+      "image": "https://upload.wikimedia.org/wikipedia/commons/thumb/1/1e/Aeropuerto_Ernesto_Cortissoz.jpg/640px-Aeropuerto_Ernesto_Cortissoz.jpg"
+    },
+    "BGA": {
+      "wiki": "Aeropuerto_Internacional_Palonegro",
+      "image": "https://images.unsplash.com/photo-1569155807248-7987a9c28a26?auto=format&fit=crop&w=720&q=80"
+    },
+    "PEI": {
+      "wiki": "Aeropuerto_Internacional_Mateca%C3%B1a",
+      "image": "https://images.unsplash.com/photo-1583608205776-0fd2ae23354a?auto=format&fit=crop&w=720&q=80"
+    },
+    "SMR": {
+      "wiki": "Aeropuerto_Internacional_Sim%C3%B3n_Bol%C3%ADvar_%28Colombia%29",
+      "image": "https://images.unsplash.com/photo-1464033890881-9a4691beeecc?auto=format&fit=crop&w=720&q=80"
+    },
+    "VVC": {
+      "wiki": "Aeropuerto_Vanguardia",
+      "image": "https://images.unsplash.com/photo-1529074963764-98f45c47344b?auto=format&fit=crop&w=720&q=80"
+    },
+    "AXM": {
+      "wiki": "Aeropuerto_El_Ed%C3%A9n",
+      "image": "https://images.unsplash.com/photo-1578681994506-0fd2ae23354a?auto=format&fit=crop&w=720&q=80"
+    },
+    "CUC": {
+      "wiki": "Aeropuerto_Internacional_Camilo_Daza",
+      "image": "https://images.unsplash.com/photo-1556388150-64c6337a1e67?auto=format&fit=crop&w=720&q=80"
+    },
+    "MTR": {
+      "wiki": "Aeropuerto_Los_Garzones",
+      "image": "https://images.unsplash.com/photo-1474302770737-17365223880f?auto=format&fit=crop&w=720&q=80"
+    },
+    "PSO": {
+      "wiki": "Aeropuerto_Antonio_Nari%C3%B1o",
+      "image": "https://images.unsplash.com/photo-1542291025-9588164b62e8?auto=format&fit=crop&w=720&q=80"
+    },
+    "LET": {
+      "wiki": "Aeropuerto_Alfredo_V%C3%A1squez_Cobo",
+      "image": "https://images.unsplash.com/photo-1436491865332-7a61a109cc05?auto=format&fit=crop&w=720&q=80"
+    },
+    "UIB": {
+      "wiki": "Aeropuerto_El_Cara%C3%B1o",
+      "image": "https://images.unsplash.com/photo-1502920917128-1aa500764b20?auto=format&fit=crop&w=720&q=80"
+    },
+    "TCO": {
+      "wiki": "Aeropuerto_La_Florida_%28Colombia%29",
+      "image": "https://images.unsplash.com/photo-1418986608486-160e57483104?auto=format&fit=crop&w=720&q=80"
+    },
+    "EOH": {
+      "wiki": "Aeropuerto_Olaya_Herrera",
+      "image": "https://images.unsplash.com/photo-1583608205776-0fd2ae23354a?auto=format&fit=crop&w=720&q=80"
+    },
+    "MZL": {
+      "wiki": "Aeropuerto_La_Nubia",
+      "image": "https://images.unsplash.com/photo-1529074963764-98f45c47344b?auto=format&fit=crop&w=720&q=80"
+    }
+  }
+}
