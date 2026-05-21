@@ -1067,6 +1067,7 @@ async function loadItineraries() {
     const response = await fetchWithTimeout(url.toString(), {}, 7000);
     if (!response.ok) throw new Error(`HTTP ${response.status}`);
     const items = await response.json();
+    window.AeroRutasAPI.lastLoadedItineraries = items;
     renderItineraries(items, filter);
   } catch {
     els.listCount.textContent = "";
