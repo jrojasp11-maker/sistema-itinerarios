@@ -117,6 +117,7 @@ function seedPrincipalAirports() {
 function setDefaultTravelDate() {
   const today = new Date().toISOString().slice(0, 10);
   els.travelDate.min = today;
+  if (!els.travelDate.value) els.travelDate.value = today;
 }
 
 async function loadMapConfig() {
@@ -665,6 +666,12 @@ function clearSelection() {
   updateSelection();
 }
 
+function notifySelectionChange() {
+  if (typeof window.AeroRutasAPI?.onSelectionChange === "function") {
+    window.AeroRutasAPI.onSelectionChange();
+  }
+}
+
 function updateSelection() {
   paintMarkers();
   updateAirportBox("origin", state.origin);
@@ -692,6 +699,42 @@ function updateSelection() {
     els.routePulse?.setAttribute("opacity", "0");
     cancelAnimationFrame(routeAnimFrame);
   }
+
+  notifySelectionChange();
+}
+
+function selectAirportsById(originId, destId) {
+  const origin = findAirport(originId);
+  const destination = findAirport(destId);
+  if (!origin) {
+    return { ok: false, error: `No encontré el aeropuerto ${String(originId || "").toUpperCase()}.` };
+  }
+  if (!destination) {
+    return { ok: false, error: `No encontré el aeropuerto ${String(destId || "").toUpperCase()}.` };
+  }
+  if (origin.id === destination.id) {
+    return { ok: false, error: "Origen y destino deben ser distintos." };
+  }
+  state.origin = origin;
+  state.destination = destination;
+  state.lastSelected = destination;
+  updateSelection();
+  return { ok: true };
+}
+
+function getRouteSummary() {
+  const km =
+    state.origin && state.destination ? haversineKm(state.origin, state.destination) : null;
+  const flightMin = km != null ? estimateFlightMinutes(km) : null;
+  return {
+    origin: state.origin,
+    destination: state.destination,
+    date: els.travelDate?.value || "",
+    distance: km != null
+      ? `${km.toLocaleString("es-CO", { maximumFractionDigits: 0 })} km`
+      : null,
+    flightTime: flightMin != null ? formatFlightEstimate(flightMin) : null,
+  };
 }
 
 async function updateAirportBox(type, airport) {
@@ -1103,3 +1146,18 @@ function refreshIcons() {
     document.documentElement.classList.add("icons-ready");
   }
 }
+
+window.AeroRutasAPI = {
+  MAP_BOUNDS,
+  projectToMap,
+  findAirport,
+  getState: () => ({ ...state }),
+  getEls: () => els,
+  selectAirportsById,
+  setTravelDate: (isoDate) => {
+    if (els.travelDate && isoDate) els.travelDate.value = isoDate;
+  },
+  getRouteSummary,
+  showToast,
+  onSelectionChange: null,
+};
