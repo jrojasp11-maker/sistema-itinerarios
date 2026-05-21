@@ -748,6 +748,10 @@ function updateRouteStats() {
   }
   els.routeStats.hidden = false;
   els.routeStats.classList.add("is-revealed");
+  els.routeStats.querySelectorAll(".bento-cell").forEach((cell, i) => {
+    cell.style.setProperty("--bento-delay", `${i * 70}ms`);
+    cell.classList.add("bento-animate");
+  });
 }
 
 function haversineKm(origin, destination) {
@@ -859,8 +863,14 @@ function setTab(name) {
     tab.classList.toggle("active", active);
     tab.setAttribute("aria-selected", String(active));
   });
+  const activePanel = name === "new" ? $("#panelNew") : $("#panelList");
   $("#panelNew").classList.toggle("active", name === "new");
   $("#panelList").classList.toggle("active", name === "list");
+  if (activePanel) {
+    activePanel.classList.remove("tab-enter");
+    void activePanel.offsetWidth;
+    activePanel.classList.add("tab-enter");
+  }
   updateTabIndicator();
   if (name === "list") loadItineraries();
   refreshIcons();
@@ -1059,11 +1069,11 @@ function formatDuration(minutes) {
 
 function showToast(message, type = "error", timeout = 4200) {
   els.toast.textContent = message;
-  els.toast.className = `toast show ${type}`;
+  els.toast.className = `toast floating-toast show ${type}`;
   window.clearTimeout(showToast.timer);
   if (timeout > 0) {
     showToast.timer = window.setTimeout(() => {
-      els.toast.className = "toast";
+      els.toast.className = "toast floating-toast";
     }, timeout);
   }
 }

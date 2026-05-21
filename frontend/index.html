@@ -166,7 +166,7 @@
     </section>
 
     <aside class="workspace" aria-label="Panel de itinerarios">
-      <header class="panel-head">
+      <header class="panel-head" data-reveal>
         <span class="eyebrow">Operación</span>
         <h2>Itinerario corporativo</h2>
         <p class="panel-lead">Registra vuelos entre aeropuertos del mapa.</p>
@@ -182,7 +182,7 @@
 
       <section class="tab-panel active" id="panelNew" role="tabpanel">
         <div class="panel-scroll">
-          <section class="airport-spotlight" id="airportSpotlight" hidden aria-label="Vista del aeropuerto seleccionado">
+          <section class="airport-spotlight" id="airportSpotlight" hidden data-reveal aria-label="Vista del aeropuerto seleccionado">
             <div class="spotlight-media">
               <img id="spotlightPhoto" src="" alt="" loading="lazy" />
               <div class="spotlight-badge" id="spotlightRole">Origen</div>
@@ -227,7 +227,7 @@
             </article>
           </div>
 
-          <form class="itinerary-form" id="itineraryForm">
+          <form class="itinerary-form" id="itineraryForm" data-reveal>
             <div class="form-grid">
               <label class="field">
                 <span>Fecha de viaje</span>
@@ -277,7 +277,7 @@
       </section>
 
       <section class="tab-panel" id="panelList" role="tabpanel">
-        <div class="list-header">
+        <div class="list-header" data-reveal>
           <div>
             <span class="section-label">Registro</span>
             <h3>Itinerarios guardados</h3>
@@ -288,7 +288,7 @@
           </button>
         </div>
 
-        <div class="filters">
+        <div class="filters" data-reveal>
           <label class="field compact">
             <span>Filtrar por fecha</span>
             <input id="dateFilter" type="date" />

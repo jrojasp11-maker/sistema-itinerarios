@@ -256,6 +256,7 @@ button {
   z-index: 0;
   pointer-events: none;
   opacity: 0;
+  transition: opacity 480ms var(--ease);
   background: radial-gradient(ellipse 70% 50% at 50% 55%, var(--accent-soft), transparent 70%);
   transition: opacity 500ms ease;
 }
@@ -477,7 +478,11 @@ button {
   stroke-linecap: round;
   filter: url("#softGlow");
   opacity: 0;
-  transition: stroke-dashoffset 900ms var(--ease), opacity 240ms ease;
+  transition: stroke-dashoffset 900ms var(--ease), opacity 320ms var(--ease);
+}
+
+.route-line.visible {
+  animation: routeLineAppear 520ms var(--ease) both;
 }
 
 .route-pulse {
@@ -500,6 +505,16 @@ button {
   cursor: pointer;
 }
 
+.airport-marker .marker-ring,
+.airport-marker .marker-dot {
+  transform-box: fill-box;
+  transform-origin: center;
+  transition:
+    transform 200ms var(--ease),
+    fill 160ms ease,
+    stroke 160ms ease;
+}
+
 .marker-ring {
   fill: rgba(94, 179, 255, 0.06);
   stroke: rgba(94, 179, 255, 0.2);
@@ -509,7 +524,16 @@ button {
 .marker-dot {
   fill: var(--accent);
   filter: url("#markerGlow");
-  transition: fill 160ms ease;
+}
+
+.airport-marker:hover .marker-dot,
+.airport-marker:focus-visible .marker-dot {
+  transform: scale(1.14);
+}
+
+.airport-marker:hover .marker-ring,
+.airport-marker:focus-visible .marker-ring {
+  transform: scale(1.1);
 }
 
 .airport-marker.picked .marker-dot {
@@ -714,7 +738,7 @@ button {
   width: 50%;
   height: 2px;
   background: var(--accent);
-  transition: transform 280ms var(--ease);
+  transition: transform 320ms var(--ease), width 280ms var(--ease);
   pointer-events: none;
 }
 
@@ -750,7 +774,10 @@ button {
 .tab-panel.active {
   display: flex;
   flex-direction: column;
-  animation: fadeUp 220ms var(--ease) both;
+}
+
+.tab-panel.active.tab-enter {
+  animation: tabEnter 280ms var(--ease) both;
 }
 
 .panel-scroll {
@@ -844,6 +871,12 @@ button {
 
 .route-bento[hidden] {
   display: none !important;
+}
+
+.route-bento.is-revealed .bento-cell,
+.route-bento:not([hidden]) .bento-cell.bento-animate {
+  animation: bentoIn 440ms var(--ease) both;
+  animation-delay: var(--bento-delay, 0ms);
 }
 
 .bento-cell {
@@ -1040,13 +1073,19 @@ button {
 
 .icon-button,
 .ghost-button,
-.primary-button {
+.primary-button,
+.map-filter-btn {
   display: inline-flex;
   align-items: center;
   justify-content: center;
   cursor: pointer;
   border-radius: var(--radius-sm);
-  transition: background 140ms ease, border-color 140ms ease, transform 100ms ease;
+  transition:
+    background 140ms ease,
+    border-color 140ms ease,
+    transform 180ms var(--ease),
+    box-shadow 180ms ease,
+    filter 180ms ease;
 }
 
 .icon-button {
@@ -1081,15 +1120,18 @@ button {
 }
 
 .icon-button:hover,
-.ghost-button:hover {
+.ghost-button:hover,
+.map-filter-btn:hover:not(.active) {
   background: var(--surface-hover);
   border-color: var(--line-strong);
+  transform: translateY(-1px);
 }
 
 .icon-button:active,
 .ghost-button:active,
-.primary-button:active {
-  transform: scale(0.98);
+.primary-button:active:not(:disabled),
+.map-filter-btn:active {
+  transform: translateY(0) scale(0.98);
 }
 
 .icon-button.subtle {
@@ -1164,7 +1206,7 @@ button {
 
 .toast.show {
   display: flex;
-  animation: fadeUp 280ms var(--ease) both;
+  animation: toastSlideIn 340ms var(--ease) both;
 }
 
 .toast.ok {
@@ -1197,8 +1239,10 @@ button {
   font-size: 0.9rem;
 }
 
-.primary-button:hover {
+.primary-button:hover:not(:disabled) {
+  transform: translateY(-2px);
   filter: brightness(1.06);
+  box-shadow: 0 8px 24px rgba(94, 179, 255, 0.22);
 }
 
 .primary-button:disabled {
@@ -1518,6 +1562,48 @@ button {
   }
 }
 
+@keyframes routeLineAppear {
+  from {
+    opacity: 0.4;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes tabEnter {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes toastSlideIn {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes bentoIn {
+  from {
+    opacity: 0;
+    transform: translateY(8px) scale(0.98);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
 @keyframes shimmer {
   to {
     background-position: -200% 0;
@@ -1642,6 +1728,11 @@ html[data-theme="light"] .marker-label {
 }
 
 @media (prefers-reduced-motion: reduce) {
+  [data-reveal] {
+    opacity: 1 !important;
+    transform: none !important;
+  }
+
   *,
   *::before,
   *::after {

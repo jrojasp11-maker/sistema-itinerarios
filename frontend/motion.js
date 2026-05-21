@@ -1,26 +1,80 @@
 /**
- * Micro-interacciones ligeras: reveal en panel y respeta prefers-reduced-motion.
+ * Animaciones editoriales AeroRutas: reveals escalonados, pestañas y bloques dinámicos.
+ * Respeta prefers-reduced-motion.
  */
-(function initMotion() {
-  if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+(function initAeroMotion() {
+  const prefersReduced = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 
-  const revealTargets = document.querySelectorAll("[data-reveal]");
-  if (!revealTargets.length || !("IntersectionObserver" in window)) return;
+  function revealImmediately(el) {
+    if (!el) return;
+    el.classList.add("is-revealed");
+  }
 
-  const io = new IntersectionObserver(
-    (entries) => {
-      entries.forEach((entry) => {
-        if (entry.isIntersecting) {
-          entry.target.classList.add("is-revealed");
-          io.unobserve(entry.target);
-        }
-      });
-    },
-    { threshold: 0.1, rootMargin: "0px 0px -6% 0px" },
-  );
+  function revealAllStatic() {
+    document.querySelectorAll("[data-reveal]").forEach(revealImmediately);
+  }
 
-  revealTargets.forEach((el, i) => {
-    el.style.setProperty("--reveal-delay", `${Math.min(i * 50, 180)}ms`);
-    io.observe(el);
+  if (prefersReduced) {
+    revealAllStatic();
+    return;
+  }
+
+  const seen = new WeakSet();
+  let revealIndex = 0;
+
+  const revealObserver =
+    "IntersectionObserver" in window
+      ? new IntersectionObserver(
+          (entries) => {
+            entries.forEach((entry) => {
+              if (!entry.isIntersecting) return;
+              entry.target.classList.add("is-revealed");
+              revealObserver.unobserve(entry.target);
+            });
+          },
+          { threshold: 0.08, rootMargin: "0px 0px -4% 0px" },
+        )
+      : null;
+
+  function registerReveal(el) {
+    if (!el || seen.has(el)) return;
+    seen.add(el);
+    const delay = Math.min(revealIndex * 55, 240);
+    revealIndex += 1;
+    el.style.setProperty("--reveal-delay", `${delay}ms`);
+
+    if (!revealObserver) {
+      revealImmediately(el);
+      return;
+    }
+
+    if (el.hidden) return;
+    revealObserver.observe(el);
+  }
+
+  document.querySelectorAll("[data-reveal]").forEach(registerReveal);
+
+  const dynamicIds = ["airportSpotlight", "recentRoutes", "routeStats"];
+  dynamicIds.forEach((id) => {
+    const el = document.getElementById(id);
+    if (!el) return;
+
+    const attrObserver = new MutationObserver(() => {
+      if (el.hidden) return;
+      registerReveal(el);
+      if (el.getBoundingClientRect().height > 0) {
+        revealImmediately(el);
+      }
+      if (id === "routeStats") {
+        el.querySelectorAll(".bento-cell").forEach((cell, i) => {
+          cell.style.setProperty("--bento-delay", `${i * 70}ms`);
+          cell.classList.add("bento-animate");
+        });
+      }
+    });
+
+    attrObserver.observe(el, { attributes: true, attributeFilter: ["hidden"] });
   });
+
+  window.AeroMotion = { registerReveal, revealImmediately };
 })();
