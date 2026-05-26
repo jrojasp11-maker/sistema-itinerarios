@@ -2,6 +2,13 @@ const host = window.location.hostname || "localhost";
 const isLocal = host === "localhost" || host === "127.0.0.1";
 const protocol = window.location.protocol === "https:" ? "https:" : "http:";
 
+if (!isLocal) {
+  ["aerorutas_api_airport", "aerorutas_api_itinerary"].forEach(k => {
+    const v = localStorage.getItem(k);
+    if (v && v.includes("localhost")) localStorage.removeItem(k);
+  });
+}
+
 function pickApiUrl(key, localUrl, vercelUrl) {
   const stored = localStorage.getItem(key);
   if (stored && (isLocal || !stored.includes("localhost"))) {
