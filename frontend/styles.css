@@ -2295,3 +2295,132 @@ button {
     transition-duration: 1ms !important;
   }
 }
+
+/* ══════════════════════════════
+   API Settings Modal (Draco glassmorphic)
+   ══════════════════════════════ */
+.modal {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  transition: opacity 240ms ease;
+}
+
+.modal[hidden] {
+  display: none !important;
+}
+
+.modal-overlay {
+  position: absolute;
+  inset: 0;
+  background: rgba(4, 6, 12, 0.75);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  z-index: 1;
+}
+
+.modal-content {
+  position: relative;
+  z-index: 2;
+  width: 100%;
+  max-width: 480px;
+  background: var(--surface);
+  border: 1px solid var(--line-strong);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-gold);
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  animation: bentoIn 300ms var(--ease) both;
+}
+
+.modal-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 18px 24px;
+  border-bottom: 1px solid var(--line);
+}
+
+.modal-header h3 {
+  margin: 0;
+  font-family: var(--font-display);
+  font-size: 1.15rem;
+  font-weight: 700;
+  color: var(--text);
+  background: linear-gradient(135deg, var(--gold), var(--accent));
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.modal-body {
+  padding: 24px;
+}
+
+.modal-footer {
+  padding: 16px 24px;
+  background: var(--bg-elevated);
+  border-top: 1px solid var(--line);
+  display: flex;
+  justify-content: flex-end;
+  gap: 12px;
+}
+
+/* ══════════════════════════════
+   Export Mode Styling
+   ══════════════════════════════ */
+body.is-exporting {
+  height: auto !important;
+  overflow: visible !important;
+  background: #06080f !important;
+}
+
+body.is-exporting .topbar,
+body.is-exporting .export-actions,
+body.is-exporting .filters,
+body.is-exporting .map-toolbar,
+body.is-exporting .form-actions,
+body.is-exporting .toast,
+body.is-exporting .selection-dock,
+body.is-exporting .tabbar,
+body.is-exporting .mini-map-panel,
+body.is-exporting .map-hint,
+body.is-exporting .map-legend,
+body.is-exporting [data-delete-id] {
+  display: none !important;
+}
+
+body.is-exporting .app-shell {
+  display: grid !important;
+  grid-template-columns: 1fr 400px !important;
+  height: auto !important;
+  overflow: visible !important;
+  background: #06080f !important;
+}
+
+body.is-exporting .workspace {
+  height: auto !important;
+  overflow: visible !important;
+}
+
+body.is-exporting #panelList {
+  display: block !important;
+  height: auto !important;
+  overflow: visible !important;
+}
+
+body.is-exporting .panel-scroll {
+  height: auto !important;
+  overflow: visible !important;
+}
+
+body.is-exporting .map-stage {
+  height: 680px !important;
+  min-height: 680px !important;
+  overflow: hidden !important;
+}

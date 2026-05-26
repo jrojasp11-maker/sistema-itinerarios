@@ -1,8 +1,8 @@
 const host = window.location.hostname || "localhost";
 const protocol = window.location.protocol === "https:" ? "https:" : "http:";
 const API = {
-  airport: `${protocol}//${host}:8001`,
-  itinerary: `${protocol}//${host}:8002`,
+  airport: localStorage.getItem("aerorutas_api_airport") || `${protocol}//${host}:8001`,
+  itinerary: localStorage.getItem("aerorutas_api_itinerary") || `${protocol}//${host}:8002`,
 };
 
 /** Límites geográficos proyectados al mapa real (GeoJSON → SVG 470×680) */
@@ -166,6 +166,11 @@ async function loadMapConfig() {
       els.colombiaOutlinePath?.setAttribute("d", config.path);
       els.colombiaBorder?.setAttribute("d", config.path);
       els.colombiaBorderGlow?.setAttribute("d", config.path);
+      els.colombiaTerritory?.setAttribute("d", config.path);
+      els.colombiaShade?.setAttribute("d", config.path);
+      els.colombiaHighlight?.setAttribute("d", config.path);
+      els.colombiaDetail1?.setAttribute("d", config.path);
+      els.colombiaDetail2?.setAttribute("d", config.path);
     }
   } catch {
     // El SVG de respaldo mantiene la silueta aunque falle la configuración.
@@ -253,6 +258,11 @@ function cacheElements() {
     colombiaOutlinePath: $("#colombiaOutlinePath"),
     colombiaBorder: $("#colombiaBorder"),
     colombiaBorderGlow: $("#colombiaBorderGlow"),
+    colombiaTerritory: $("#colombiaTerritory"),
+    colombiaShade: $("#colombiaShade"),
+    colombiaHighlight: $("#colombiaHighlight"),
+    colombiaDetail1: $("#colombiaDetail1"),
+    colombiaDetail2: $("#colombiaDetail2"),
     mapHint: $("#mapHint"),
     tooltip: $("#mapTooltip"),
     tooltipPhoto: $("#tooltipPhoto"),
@@ -301,6 +311,14 @@ function cacheElements() {
     listCount: $("#listCount"),
     mapFilterButtons: document.querySelectorAll(".map-filter-btn"),
     mapFilterCount: $("#mapFilterCount"),
+    openSettings: $("#openSettings"),
+    closeSettings: $("#closeSettings"),
+    cancelApiSettings: $("#cancelApiSettings"),
+    saveApiSettings: $("#saveApiSettings"),
+    apiSettingsModal: $("#apiSettingsModal"),
+    apiAirportUrl: $("#apiAirportUrl"),
+    apiItineraryUrl: $("#apiItineraryUrl"),
+    settingsModalOverlay: $("#settingsModalOverlay"),
   });
 }
 
@@ -360,12 +378,47 @@ function bindEvents() {
   });
 
   document.addEventListener("keydown", (event) => {
-    if (event.key === "Escape") clearSelection();
+    if (event.key === "Escape") {
+      clearSelection();
+      closeSettingsModal();
+    }
   });
 
   window.addEventListener("resize", () => {
     if (els.tooltip.classList.contains("show")) hideTooltip();
     updateTabIndicator();
+  });
+
+  // Settings modal events
+  els.openSettings?.addEventListener("click", () => {
+    if (els.apiAirportUrl) els.apiAirportUrl.value = API.airport;
+    if (els.apiItineraryUrl) els.apiItineraryUrl.value = API.itinerary;
+    els.apiSettingsModal?.removeAttribute("hidden");
+    els.apiSettingsModal?.setAttribute("aria-hidden", "false");
+  });
+
+  function closeSettingsModal() {
+    els.apiSettingsModal?.setAttribute("hidden", "");
+    els.apiSettingsModal?.setAttribute("aria-hidden", "true");
+  }
+
+  els.closeSettings?.addEventListener("click", closeSettingsModal);
+  els.cancelApiSettings?.addEventListener("click", closeSettingsModal);
+  els.settingsModalOverlay?.addEventListener("click", closeSettingsModal);
+
+  els.saveApiSettings?.addEventListener("click", () => {
+    const airportVal = els.apiAirportUrl?.value.trim();
+    const itineraryVal = els.apiItineraryUrl?.value.trim();
+    if (!airportVal || !itineraryVal) {
+      showToast("Ambas URLs son requeridas.", "warn");
+      return;
+    }
+    localStorage.setItem("aerorutas_api_airport", airportVal);
+    localStorage.setItem("aerorutas_api_itinerary", itineraryVal);
+    showToast("Configuración guardada. Recargando...", "ok", 1000);
+    setTimeout(() => {
+      window.location.reload();
+    }, 1000);
   });
 }
 
