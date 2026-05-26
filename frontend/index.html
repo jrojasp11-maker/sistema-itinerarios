@@ -46,6 +46,10 @@
         <a class="doc-link" id="linkAirportDocs" href="#" target="_blank" rel="noopener noreferrer" title="OpenAPI aeropuertos">:8001</a>
         <a class="doc-link" id="linkItineraryDocs" href="#" target="_blank" rel="noopener noreferrer" title="OpenAPI itinerarios">:8002</a>
       </nav>
+      <button class="icon-button subtle" id="openSettings" type="button" title="Configuración de APIs" aria-label="Configuración de APIs" style="margin-left: 4px; padding: 4px; min-height: 28px; width: 28px; display: inline-flex; align-items: center; justify-content: center;">
+        <span class="icon-fallback">⚙️</span>
+        <i data-lucide="settings" style="width: 15px; height: 15px;"></i>
+      </button>
     </div>
   </header>
 
@@ -132,6 +136,31 @@
           <clipPath id="colombiaClip">
             <path id="colombiaOutlinePath" />
           </clipPath>
+
+          <!-- Inlined Colombia Map Gradients, Patterns, and Filters -->
+          <linearGradient id="terrainFill" x1="12%" y1="6%" x2="92%" y2="94%">
+            <stop offset="0%" stop-color="#4a7c68"/>
+            <stop offset="35%" stop-color="#2f5a4c"/>
+            <stop offset="72%" stop-color="#1f3d34"/>
+            <stop offset="100%" stop-color="#142a24"/>
+          </linearGradient>
+          <linearGradient id="terrainShade" x1="0%" y1="0%" x2="100%" y2="100%">
+            <stop offset="0%" stop-color="rgba(182,255,54,0.18)"/>
+            <stop offset="55%" stop-color="rgba(56,228,210,0.06)"/>
+            <stop offset="100%" stop-color="rgba(0,0,0,0.35)"/>
+          </linearGradient>
+          <radialGradient id="terrainHighlight" cx="45%" cy="32%" r="62%">
+            <stop offset="0%" stop-color="rgba(120,220,190,0.35)"/>
+            <stop offset="100%" stop-color="rgba(56,228,210,0)"/>
+          </radialGradient>
+          <pattern id="topoLines" width="80" height="80" patternUnits="userSpaceOnUse" patternTransform="rotate(-12)">
+            <path d="M0 40 Q20 28 40 40 T80 40" fill="none" stroke="rgba(182,255,54,0.07)" stroke-width="1"/>
+            <path d="M0 20 Q25 8 50 20 T100 20" fill="none" stroke="rgba(56,228,210,0.05)" stroke-width="1"/>
+          </pattern>
+          <filter id="terrainShadow" x="-10%" y="-10%" width="120%" height="120%">
+            <feDropShadow dx="0" dy="16" stdDeviation="14" flood-color="#000" flood-opacity="0.6"/>
+            <feDropShadow dx="0" dy="0" stdDeviation="8" flood-color="#b6ff36" flood-opacity="0.22"/>
+          </filter>
         </defs>
 
         <g class="grid-lines" aria-hidden="true">
@@ -140,16 +169,14 @@
         </g>
 
         <g class="country-map" aria-label="Mapa de Colombia">
+          <rect width="470" height="680" fill="#080b0f" />
           <g clip-path="url(#colombiaClip)">
-            <image
-              class="country-map-terrain"
-              href="./assets/colombia-map.svg"
-              x="0"
-              y="0"
-              width="470"
-              height="680"
-              preserveAspectRatio="xMidYMid meet"
-            />
+            <path id="colombiaTerritory" fill="url(#terrainFill)" filter="url(#terrainShadow)" />
+            <rect width="470" height="680" fill="url(#topoLines)" />
+            <path id="colombiaShade" fill="url(#terrainShade)" stroke="none" />
+            <path id="colombiaHighlight" fill="url(#terrainHighlight)" stroke="none" />
+            <path id="colombiaDetail1" fill="none" stroke="rgba(182,255,54,0.09)" stroke-width="1.2" transform="translate(4 6) scale(0.985)" />
+            <path id="colombiaDetail2" fill="none" stroke="rgba(56,228,210,0.07)" stroke-width="1" transform="translate(-3 -4) scale(0.97)" />
           </g>
           <path id="colombiaBorderGlow" class="country-border-glow" fill="none" />
           <path id="colombiaBorder" class="country-border" fill="none" />
@@ -335,6 +362,36 @@
       </section>
     </aside>
   </main>
+
+  <!-- Modal de Configuración de API (Draco glassmorphic) -->
+  <div id="apiSettingsModal" class="modal" role="dialog" aria-labelledby="settingsModalTitle" aria-hidden="true" hidden>
+    <div class="modal-overlay" id="settingsModalOverlay"></div>
+    <div class="modal-content">
+      <header class="modal-header">
+        <h3 id="settingsModalTitle">Configuración de API</h3>
+        <button type="button" class="icon-button subtle" id="closeSettings" aria-label="Cerrar modal">
+          <span class="icon-fallback">×</span>
+          <i data-lucide="x"></i>
+        </button>
+      </header>
+      <div class="modal-body">
+        <div style="display: grid; grid-template-columns: 1fr; gap: 1.25rem;">
+          <label class="field">
+            <span>URL de Servicio de Aeropuertos</span>
+            <input id="apiAirportUrl" type="url" placeholder="http://localhost:8001" autocomplete="off" required />
+          </label>
+          <label class="field">
+            <span>URL de Servicio de Itinerarios</span>
+            <input id="apiItineraryUrl" type="url" placeholder="http://localhost:8002" autocomplete="off" required />
+          </label>
+        </div>
+      </div>
+      <footer class="modal-footer">
+        <button type="button" class="ghost-button" id="cancelApiSettings">Cancelar</button>
+        <button type="button" class="primary-button" id="saveApiSettings" style="padding: 8px 16px;">Guardar</button>
+      </footer>
+    </div>
+  </div>
 
   <script src="https://unpkg.com/lucide@0.487.0/dist/umd/lucide.min.js" defer></script>
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin="" defer></script>
