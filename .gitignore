@@ -46,3 +46,5 @@ frontend/.cache/
 
 # Cursor (opcional — descomentar si no quieres versionar reglas locales)
 # .cursor/
+
+.vercel

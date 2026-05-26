@@ -1,8 +1,18 @@
 const host = window.location.hostname || "localhost";
+const isLocal = host === "localhost" || host === "127.0.0.1";
 const protocol = window.location.protocol === "https:" ? "https:" : "http:";
+
+function pickApiUrl(key, localUrl, vercelUrl) {
+  const stored = localStorage.getItem(key);
+  if (stored && (isLocal || !stored.includes("localhost"))) {
+    return stored;
+  }
+  return isLocal ? localUrl : vercelUrl;
+}
+
 const API = {
-  airport: localStorage.getItem("aerorutas_api_airport") || `${protocol}//${host}:8001`,
-  itinerary: localStorage.getItem("aerorutas_api_itinerary") || `${protocol}//${host}:8002`,
+  airport: pickApiUrl("aerorutas_api_airport", `${protocol}//${host}:8001`, "/api/airport"),
+  itinerary: pickApiUrl("aerorutas_api_itinerary", `${protocol}//${host}:8002`, "/api/itinerary"),
 };
 
 /** Límites geográficos proyectados al mapa real (GeoJSON → SVG 470×680) */
