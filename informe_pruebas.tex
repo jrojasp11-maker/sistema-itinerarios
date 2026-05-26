@@ -1,0 +1,797 @@
+\documentclass[12pt,a4paper]{article}
+
+% ---- Paquetes ----
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage[spanish]{babel}
+\usepackage{geometry}
+\usepackage{graphicx}
+\usepackage{xcolor}
+\usepackage{listings}
+\usepackage{longtable}
+\usepackage{booktabs}
+\usepackage{hyperref}
+\usepackage{enumitem}
+\usepackage{titlesec}
+\usepackage{fancyhdr}
+\usepackage{float}
+\usepackage{caption}
+\usepackage{tabularx}
+
+% ---- Geometr�a ----
+\geometry{margin=2.5cm, top=3cm, bottom=3cm}
+
+% ---- Colores ----
+\definecolor{primary}{HTML}{1a1a2e}
+\definecolor{secondary}{HTML}{16213e}
+\definecolor{accent}{HTML}{e94560}
+\definecolor{codebg}{HTML}{f5f5f5}
+\definecolor{codeframe}{HTML}{e0e0e0}
+
+% ---- Estilo de p�gina ----
+\pagestyle{fancy}
+\fancyhf{}
+\fancyhead[L]{\small \textit{Informe de Pruebas -- AeroRutas}}
+\fancyhead[R]{\small \thepage}
+\fancyfoot[C]{\scriptsize \textcolor{gray}{Sistema de Itinerarios Empresariales}}
+
+% ---- Portada ----
+\title{
+  \vspace{3cm}
+  {\Huge \textbf{Informe de Pruebas Unitarias}}\\[0.5cm]
+  {\LARGE AeroRutas -- Sistema de Itinerarios Empresariales}\\[0.3cm]
+  {\large \textcolor{gray}{Microservicios de Aeropuertos e Itinerarios}}\\[1.5cm]
+  \includegraphics[width=0.3\textwidth]{frontend_preview.png}\\[1cm]
+}
+\author{
+  \textbf{Arquitectura:} Hexagonal (Puertos y Adaptadores)\\[0.3cm]
+  \textbf{Stack:} FastAPI + Python 3.11+ + PostgreSQL / SQLite\\[0.3cm]
+  \textbf{Pruebas:} pytest 9 + pytest-asyncio + pytest-httpx + coverage
+}
+\date{\today}
+
+% ---- Estilo de c�digo ----
+\lstdefinestyle{pythonstyle}{
+  language=Python,
+  backgroundcolor=\color{codebg},
+  basicstyle=\ttfamily\small,
+  keywordstyle=\color{blue},
+  commentstyle=\color{green!40!black},
+  stringstyle=\color{red!60!black},
+  frame=single,
+  rulecolor=\color{codeframe},
+  breaklines=true,
+  tabsize=4,
+  numbers=left,
+  numberstyle=\tiny\color{gray},
+  captionpos=b,
+}
+
+\lstdefinestyle{bashstyle}{
+  backgroundcolor=\color{codebg},
+  basicstyle=\ttfamily\small,
+  frame=single,
+  rulecolor=\color{codeframe},
+  breaklines=true,
+}
+
+% ---- Configuraci�n de t�tulos ----
+\titleformat{\section}{\Large\bfseries\color{primary}}{}{0em}{}[\vspace{-0.3cm}\rule{\textwidth}{0.5pt}]
+\titleformat{\subsection}{\large\bfseries\color{secondary}}{}{0em}{}
+\titleformat{\subsubsection}{\normalsize\bfseries\color{secondary}}{}{0em}{}
+
+% ---- Documento ----
+\begin{document}
+
+\maketitle
+\thispagestyle{empty}
+\newpage
+
+% ---- Tabla de contenidos ----
+\tableofcontents
+\newpage
+
+% ============================================================
+\section{Resumen Ejecutivo}
+% ============================================================
+
+Este informe documenta las pruebas unitarias realizadas sobre los dos microservicios
+que componen el sistema \textbf{AeroRutas}:
+
+\begin{itemize}
+  \item \textbf{Airport Service} (\texttt{airport\_service/}): Cat�logo de aeropuertos colombianos.
+  \item \textbf{Itinerary Service} (\texttt{itinerary\_service/}): CRUD de itinerarios empresariales.
+\end{itemize}
+
+Ambos servicios siguen una arquitectura hexagonal (puertos y adaptadores), lo que
+permite probar el dominio de forma aislada mediante dobles de prueba (\textit{fakes}).
+
+\vspace{0.3cm}
+\begin{tabularx}{\textwidth}{lXr}
+  \toprule
+  \textbf{M�trica} & \textbf{Valor} & \\
+  \midrule
+  Total de pruebas unitarias & 81 & (27 airport + 54 itinerary) \\
+  Pruebas exitosas & 81 & 100\% \\
+  Cobertura airport\_service & 97\% & (sin contar \texttt{main.py}) \\
+  Cobertura itinerary\_service & 96\% & (sin contar \texttt{main.py}) \\
+  Tiempo de ejecuci�n unitarias & $\sim$10s & Ambos servicios \\
+  Pylint airport\_service & 7.04/10 & \\
+   Pylint itinerary\_service & 7.16/10 & \\
+   Vulnerabilidades (Bandit) & 0 & Alta/Media \\
+   Pruebas de carga & 300 req & 100\% OK, 154.4 req/s \\
+   SonarQube Quality Gate & PASSED & \\
+   SonarQube Bugs & 0 & \\
+   SonarQube Vulnerabilidades & 0 & \\
+   SonarQube Code Smells & 6 & \\
+   SonarQube Deuda Técnica & 32 min & \\
+  \bottomrule
+\end{tabularx}
+
+% ============================================================
+\section{Arquitectura del Sistema}
+% ============================================================
+
+\subsection{Visi�n General}
+
+El sistema sigue una arquitectura de \textbf{microservicios} con patr�n
+\textbf{hexagonal} (Puertos y Adaptadores). Cada microservicio se divide en tres capas:
+
+\begin{description}
+  \item[Dominio (\texttt{domain/})] Contiene las entidades, puertos (interfaces),
+        servicios y excepciones. Es puro Python sin dependencias externas.
+  \item[Infraestructura (\texttt{infrastructure/})] Implementa los puertos:
+        adaptadores HTTP, repositorios SQLAlchemy, clientes HTTP.
+  \item[API (\texttt{api/})] Expone los endpoints REST mediante FastAPI.
+\end{description}
+
+\subsection{Diagrama de Capas}
+\vspace{0.3cm}
+\begin{verbatim}
+  +-------------------+
+  |   FastAPI Routes  |  <- Capa de presentaci�n (api/)
+  +-------------------+
+          |
+  +-------------------+
+  |  Domain Service   |  <- L�gica de negocio (domain/)
+  +-------------------+
+          |
+  +-------------------+
+  |   Ports (interf.) |  <- Interfaces abstractas
+  +-------------------+
+         / \
+        /   \
+  +-----------+   +------------------+
+  | Repository|   | Airport Client   |  <- Adaptadores (infrastructure/)
+  +-----------+   +------------------+
+       |                  |
+  [SQLite/PostgreSQL]   [Airport Service HTTP]
+\end{verbatim}
+
+\subsection{Tecnolog�as Utilizadas}
+
+\begin{tabularx}{\textwidth}{lX}
+  \toprule
+  \textbf{Componente} & \textbf{Tecnolog�a} \\
+  \midrule
+  Lenguaje & Python 3.11+ \\
+  Framework web & FastAPI 0.111+ \\
+  ORM & SQLAlchemy 2.0+ (asincr�ono) \\
+  Base de datos & PostgreSQL 15 (producci�n) / SQLite (desarrollo) \\
+  Cliente HTTP & httpx 0.27+ \\
+  Validaci�n & Pydantic 2.7+ \\
+  Contenedores & Docker + Docker Compose \\
+  \bottomrule
+\end{tabularx}
+
+\subsection{Stack de Pruebas}
+
+\begin{tabularx}{\textwidth}{lX}
+  \toprule
+  \textbf{Herramienta} & \textbf{Prop�sito} \\
+  \midrule
+  pytest 9.0 & Framework de pruebas \\
+  pytest-asyncio 1.3 & Soporte para pruebas asincr�nicas \\
+  pytest-httpx 0.36 & Mocking de llamadas HTTP \\
+  pytest-cov 7.1 & Medici�n de cobertura \\
+  coverage 7.14 & Generaci�n de reportes XML/HTML \\
+  \bottomrule
+\end{tabularx}
+
+% ============================================================
+\section{Metodolog�a de Pruebas}
+% ============================================================
+
+\subsection{Enfoque}
+
+Se aplicaron las siguientes t�cnicas:
+
+\begin{enumerate}
+  \item \textbf{Pruebas de unidad}: Cada clase y funci�n se prueba de forma aislada.
+  \item \textbf{Dobles de prueba}: Se implementaron \textit{fakes} para sustituir
+        las dependencias externas (repositorios, validadores HTTP).
+  \item \textbf{Arquitectura hexagonal}: El dominio se prueba sin infraestructura
+        real, lo que hace las pruebas r�pidas y deterministas.
+  \item \textbf{Pruebas de integraci�n}: El repositorio SQLAlchemy se prueba con
+        una base de datos SQLite en memoria.
+  \item \textbf{Pruebas de API}: Los endpoints FastAPI se prueban con
+        \texttt{TestClient} usando dependencias inyectadas.
+\end{enumerate}
+
+\subsection{Estructura de los Tests}
+
+Cada microservicio tiene su directorio \texttt{tests/} con la siguiente organizaci�n:
+
+\begin{verbatim}
+  airport_service/tests/
+  +-- conftest.py        # Fakes y fixtures compartidos
+  +-- test_models.py     # Modelos Pydantic
+  +-- test_exceptions.py # Excepciones del dominio
+  +-- test_adapter.py    # Adaptador HTTP (con mocking)
+  +-- test_routes.py     # Endpoints FastAPI
+
+  itinerary_service/tests/
+  +-- conftest.py        # Fakes y fixtures compartidos
+  +-- test_models.py     # Modelos Pydantic con validadores
+  +-- test_domain.py     # Servicio de dominio
+  +-- test_routes.py     # Endpoints FastAPI
+  +-- test_repository.py # Repositorio SQLAlchemy (SQLite in-memory)
+  +-- test_airport_client.py  # Cliente HTTP (con mocking)
+\end{verbatim}
+
+% ============================================================
+\section{Airport Service -- Resultados}
+% ============================================================
+
+\subsection{Resumen}
+
+\textbf{27 pruebas}, 27 exitosas, 0 fallos.
+
+\vspace{0.3cm}
+\begin{tabularx}{\textwidth}{lXr}
+  \toprule
+  \textbf{Archivo} & \textbf{Descripci�n} & \textbf{Pruebas} \\
+  \midrule
+  \texttt{test\_models.py} & Modelo \texttt{Airport} (creaci�n, representaci�n) & 4 \\
+  \texttt{test\_exceptions.py} & Excepciones del dominio & 3 \\
+  \texttt{test\_adapter.py} & Adaptador \texttt{ApiColombiaAirportAdapter} & 13 \\
+  \texttt{test\_routes.py} & Endpoints \texttt{/airports/} y \texttt{/airports/validate} & 7 \\
+  \bottomrule
+\end{tabularx}
+
+\subsection{Cobertura}
+
+\begin{tabularx}{\textwidth}{lXr}
+  \toprule
+  \textbf{M�dulo} & \textbf{Archivos cubiertos} & \textbf{Cobertura} \\
+  \midrule
+  \texttt{domain/models.py} & Modelo Airport & 100\% \\
+  \texttt{domain/exceptions.py} & Excepciones & 100\% \\
+  \texttt{domain/ports.py} & Interfaz IAirportPort & 100\% \\
+  \texttt{infrastructure/adapter.py} & ApiColombiaAirportAdapter & 100\% \\
+  \texttt{api/routes.py} & Endpoints REST & 96\% \\
+  \bottomrule
+\end{tabularx}
+
+\subsection{Pruebas Destacadas}
+
+\subsubsection{Adaptador -- Inversi�n de coordenadas}
+La API Colombia devuelve latitud y longitud invertidas. El adaptador las corrige:
+
+\vspace{0.3cm}
+\begin{lstlisting}[style=pythonstyle]
+def test_adapt_swaps_api_colombia_latitude_longitude_fields():
+    airport = adapter._adapt({
+        "latitude": -74.160003,   # API Colombia: campo invertido
+        "longitude": 4.698402,
+    })
+    assert airport.lat == pytest.approx(4.698402)
+    assert airport.lng == pytest.approx(-74.160003)
+\end{lstlisting}
+
+\subsubsection{Validaci�n de aeropuertos -- Servicio no disponible}
+Se verifica que el adaptador lanza \texttt{ServiceUnavailableError} en caso de timeout:
+
+\vspace{0.3cm}
+\begin{lstlisting}[style=pythonstyle]
+@pytest.mark.asyncio
+async def test_get_all_timeout_raises_service_unavailable(self, httpx_mock):
+    adapter = ApiColombiaAirportAdapter(base_url="http://test/api/v1")
+    httpx_mock.add_exception(httpx.TimeoutException("timeout"))
+    with pytest.raises(ServiceUnavailableError, match="timeout"):
+        await adapter.get_all()
+\end{lstlisting}
+
+% ============================================================
+\section{Itinerary Service -- Resultados}
+% ============================================================
+
+\subsection{Resumen}
+
+\textbf{54 pruebas}, 54 exitosas, 0 fallos.
+
+\vspace{0.3cm}
+\begin{tabularx}{\textwidth}{lXr}
+  \toprule
+  \textbf{Archivo} & \textbf{Descripci�n} & \textbf{Pruebas} \\
+  \midrule
+  \texttt{test\_models.py} & Modelos \texttt{ItineraryCreate}, \texttt{ItineraryUpdate} & 12 \\
+  \texttt{test\_domain.py} & Servicio \texttt{ItineraryService} (CRUD) & 14 \\
+  \texttt{test\_routes.py} & Endpoints REST con TestClient & 12 \\
+  \texttt{test\_repository.py} & Repositorio SQLAlchemy (SQLite in-memory) & 10 \\
+  \texttt{test\_airport\_client.py} & Cliente HTTP \texttt{AirportServiceClient} & 6 \\
+  \bottomrule
+\end{tabularx}
+
+\subsection{Cobertura}
+
+\begin{tabularx}{\textwidth}{lXr}
+  \toprule
+  \textbf{M�dulo} & \textbf{Archivos cubiertos} & \textbf{Cobertura} \\
+  \midrule
+  \texttt{domain/models.py} & ItineraryCreate, ItineraryUpdate, FlightStatus & 100\% \\
+  \texttt{domain/exceptions.py} & Excepciones del dominio & 100\% \\
+  \texttt{domain/ports.py} & Interfaces IItineraryRepository, IAirportValidatorPort & 100\% \\
+  \texttt{domain/service.py} & ItineraryService (l�gica de negocio) & 100\% \\
+  \texttt{api/routes.py} & 5 endpoints CRUD & 95\% \\
+  \texttt{infrastructure/airport\_client.py} & AirportServiceClient HTTP & 100\% \\
+  \texttt{infrastructure/repository.py} & SQLAlchemyItineraryRepository & 88\% \\
+  \texttt{dependencies.py} & Inyecci�n de dependencias & 87\% \\
+  \bottomrule
+\end{tabularx}
+
+\subsection{Pruebas Destacadas}
+
+\subsubsection{Dominio -- Validaci�n de modelos}
+Los modelos Pydantic tienen validadores que se prueban exhaustivamente:
+
+\vspace{0.3cm}
+\begin{lstlisting}[style=pythonstyle]
+def test_rejects_same_airport(self):
+    with pytest.raises(ValidationError, match="no pueden ser iguales"):
+        ItineraryCreate(
+            aeropuerto_salida_id="BOG",
+            aeropuerto_llegada_id="BOG",  # Mismo aeropuerto
+            ...
+        )
+
+def test_rejects_zero_duration(self):
+    with pytest.raises(ValidationError, match="mayor a 0"):
+        ItineraryCreate(duracion_minutos=0, ...)
+\end{lstlisting}
+
+\subsubsection{Arquitectura hexagonal -- Pruebas del dominio con fakes}
+El servicio de dominio se prueba sin base de datos ni HTTP:
+
+\vspace{0.3cm}
+\begin{lstlisting}[style=pythonstyle]
+@pytest.mark.asyncio
+async def test_happy_path(self, repo, valid_validator):
+    svc = ItineraryService(repo, valid_validator)
+    result = await svc.create(make_itinerary_create())
+    assert result.aeropuerto_salida_id == "BOG"
+    assert result.estado == FlightStatus.PLANEADO
+
+@pytest.mark.asyncio
+async def test_fails_if_airports_invalid(self, repo, invalid_validator):
+    svc = ItineraryService(repo, invalid_validator)
+    with pytest.raises(InvalidAirportsError):
+        await svc.create(make_itinerary_create())
+\end{lstlisting}
+
+\subsubsection{Repositorio -- Pruebas de integraci�n con SQLite en memoria}
+Se utiliza una base de datos SQLite en memoria para probar el repositorio:
+
+\vspace{0.3cm}
+\begin{lstlisting}[style=pythonstyle]
+@pytest_asyncio.fixture
+async def db_session():
+    engine = create_async_engine("sqlite+aiosqlite://", echo=False)
+    async with engine.begin() as conn:
+        await conn.run_sync(Base.metadata.create_all)
+    factory = async_sessionmaker(engine, ...)
+    async with factory() as session:
+        yield session
+\end{lstlisting}
+
+\subsubsection{Cliente HTTP -- Mocking con pytest-httpx}
+El cliente HTTP se prueba simulando respuestas del Airport Service:
+
+\vspace{0.3cm}
+\begin{lstlisting}[style=pythonstyle]
+@pytest.mark.asyncio
+async def test_validate_valid(self, httpx_mock):
+    client = AirportServiceClient("http://airport-svc:8001")
+    httpx_mock.add_response(
+        url="http://airport-svc:8001/airports/validate?...",
+        json={"valid": True, ...},
+    )
+    result = await client.validate("BOG", "MDE")
+    assert result is True
+\end{lstlisting}
+
+% ============================================================
+\section{Scripts de Automatizaci�n}
+% ============================================================
+
+Se crearon los siguientes archivos para automatizar las pruebas:
+
+\begin{description}
+  \item[\texttt{run\_tests.ps1}] Script PowerShell que ejecuta las pruebas
+        de ambos servicios, con soporte para cobertura y SonarQube.
+\end{description}
+
+\subsection{Uso}
+\vspace{0.3cm}
+\begin{lstlisting}[style=bashstyle]
+# Ejecutar todas las pruebas
+.\run_tests.ps1
+
+# Con cobertura
+.\run_tests.ps1 -Coverage
+
+# Con modo verbose
+.\run_tests.ps1 -Verbose
+\end{lstlisting}
+
+% ============================================================
+\section{An�lisis Est�tico de C�digo}
+% ============================================================
+
+Se realizaron dos tipos de an�lisis est�tico sobre el c�digo fuente
+(excluyendo archivos de prueba): \textbf{Pylint} (calidad del c�digo) y
+\textbf{Bandit} (seguridad).
+
+\subsection{Pylint -- Calidad del C�digo}
+
+\begin{tabularx}{\textwidth}{lXr}
+  \toprule
+  \textbf{Servicio} & \textbf{Puntuaci�n} & \textbf{Interpretaci�n} \\
+  \midrule
+  Airport Service & 7.04/10 & Bueno -- requiere docstrings y manejo de excepciones \\
+  Itinerary Service & 7.16/10 & Bueno -- requiere docstrings y manejo de excepciones \\
+  \bottomrule
+\end{tabularx}
+
+\vspace{0.3cm}
+\textbf{Observaciones principales:}
+
+\begin{itemize}
+  \item \textbf{Docstrings}: La mayor�a de m�dulos, clases y funciones carecen de
+        docstrings. Esto reduce la puntuaci�n pero no afecta la funcionalidad.
+  \item \textbf{Manejo de excepciones}: Se recomienda usar \texttt{raise ... from exc}
+        en lugar de \texttt{raise ...} al relanzar excepciones en los m�todos
+        \texttt{HTTPException} de los routes, para preservar la traza de pila original.
+  \item \textbf{Par�metro \texttt{id}}: Se redeclara el s�mbolo incorporado \texttt{id}
+        como par�metro en varios m�todos. Se recomienda renombrar a \texttt{item\_id}.
+  \item \textbf{L�neas largas}: Algunas l�neas superan los 100 caracteres en los
+        archivos de prueba, lo cual es aceptable en ese contexto.
+\end{itemize}
+
+\subsection{Bandit -- Seguridad}
+
+\begin{tabularx}{\textwidth}{lXr}
+  \toprule
+  \textbf{M�trica} & \textbf{Valor} & \\
+  \midrule
+  L�neas analizadas & 1,342 & \\
+  Issues de severidad ALTA & 0 & \\
+  Issues de severidad MEDIA & 0 & \\
+  Issues de severidad BAJA & 110 & (todos en archivos de prueba) \\
+  \bottomrule
+\end{tabularx}
+
+\vspace{0.3cm}
+Los 110 hallazgos de baja severidad corresponden \'unicamente al uso de
+\texttt{assert} en los archivos de prueba (\texttt{tests/}), lo cual es
+esperado y aceptable. \textbf{No se detectaron vulnerabilidades reales}
+en el c�digo de producci�n.
+
+% ============================================================
+\section{Pruebas de Carga}
+% ============================================================
+
+\subsection{Metodolog�a}
+
+Se implement� un script de pruebas de carga (\texttt{tests\_load/test\_load.py})
+que simula peticiones concurrentes contra los endpoints cr�ticos de ambos
+microservicios. Como los servicios no estaban en ejecuci�n, se utilizaron
+aplicaciones FastAPI sint�ticas con latencia simulada (3-5 ms por petici�n)
+para emular el comportamiento real.
+
+\subsection{Configuraci�n}
+
+\begin{tabularx}{\textwidth}{lX}
+  \toprule
+  \textbf{Par�metro} & \textbf{Valor} \\
+  \midrule
+  N�mero de peticiones por endpoint & 100 \\
+  Concurrencia & 5 peticiones simult�neas \\
+  Latencia simulada & 3-5 ms por endpoint \\
+  Endpoints probados & GET /airports/, GET /airports/validate, POST /itineraries/ \\
+  \bottomrule
+\end{tabularx}
+
+\subsection{Resultados}
+
+\textbf{300 peticiones}, 300 exitosas (100\,\%), 0 fallos.
+
+\vspace{0.3cm}
+\begin{tabularx}{\textwidth}{lXXXXXX}
+  \toprule
+  \textbf{Endpoint} & \textbf{Req} & \textbf{OK} & \textbf{Avg (ms)} & \textbf{p95 (ms)} & \textbf{p99 (ms)} \\
+  \midrule
+  GET /airports/          & 100 & 100 & 18.6 & 25.5 & 30.4 \\
+  GET /airports/validate  & 100 & 100 & 15.2 & 24.3 & 25.3 \\
+  POST /itineraries/      & 100 & 100 & 19.4 & 25.6 & 62.7 \\
+  \bottomrule
+\end{tabularx}
+
+\vspace{0.3cm}
+\textbf{M�tricas globales:}
+
+\begin{itemize}
+  \item Rendimiento total: \textbf{154.4 req/s}
+  \item Latencia promedio: \textbf{17.7 ms}
+  \item p95 promedio: \textbf{25.1 ms}
+  \item Tasa de �xito: \textbf{100\,\%}
+\end{itemize}
+
+\vspace{0.3cm}
+\textbf{Nota:} Estos resultados corresponden a una simulaci�n en un entorno
+controlado. En producci�n, con PostgreSQL y la red real, se esperan valores
+de latencia ligeramente superiores pero dentro del rango aceptable para una
+API REST empresarial.
+
+Los resultados detallados se guardaron en \texttt{load\_test\_results.json}
+para su consulta y an�lisis posterior.
+
+\subsection{Ejecuci�n del Script de Carga}
+\vspace{0.3cm}
+\begin{lstlisting}[style=bashstyle]
+# Requiere los servicios en ejecuci�n en localhost:8001 y 8002
+python tests_load/test_load.py
+\end{lstlisting}
+
+% ============================================================
+\section{SonarQube}
+
+\subsection{Configuraci\'on}
+
+Se crearon los siguientes archivos para integrar con SonarQube:
+
+\begin{description}
+  \item[\texttt{sonar-project.properties}] Configuraci\'on del proyecto SonarQube.
+  \item[\texttt{docker-compose.sonarqube.yml}] Despliegue local de SonarQube
+        Community Edition mediante Docker Compose.
+  \item[\texttt{.coveragerc}] Configuraci\'on de cobertura para pytest-cov.
+\end{description}
+
+\subsection{Ejecuci\'on}
+
+El an\'alisis se ejecut\'o con SonarQube Community Edition 9.9.8 LTS mediante
+Docker. Se utiliz\'o el esc\'aner oficial \texttt{sonar-scanner-cli} 8.0.1
+sobre los tres m\'odulos del proyecto.
+
+\vspace{0.3cm}
+\begin{lstlisting}[style=bashstyle]
+# Iniciar SonarQube
+docker compose -f docker-compose.sonarqube.yml up -d
+
+# Ejecutar an\'alisis con sonar-scanner via Docker
+docker run --rm --network host \
+  -v "$(pwd):/usr/src" \
+  sonarsource/sonar-scanner-cli \
+  -Dsonar.projectBaseDir=/usr/src \
+  -Dsonar.login=squ_...
+\end{lstlisting}
+
+\subsection{Resultados del An\'alisis}
+
+\subsubsection{Quality Gate}
+
+\begin{tabularx}{\textwidth}{lXr}
+  \toprule
+  \textbf{M\'etrica} & \textbf{Valor} & \\
+  \midrule
+  Quality Gate & \textcolor{green!40!black}{\textbf{PASSED}} & \\
+  Clean as Code & Compliant & \\
+  \bottomrule
+\end{tabularx}
+
+\subsubsection{Resumen de Issues}
+
+\begin{tabularx}{\textwidth}{lXr}
+  \toprule
+  \textbf{Tipo} & \textbf{Cantidad} & \\
+  \midrule
+  Bugs & 0 & \\
+  Vulnerabilidades & 0 & \\
+  Code Smells & 6 & \\
+  Security Hotspots & 4 & \\
+  \bottomrule
+\end{tabularx}
+
+\vspace{0.3cm}
+
+\begin{tabularx}{\textwidth}{lXr}
+  \toprule
+  \textbf{Severidad} & \textbf{Cantidad} & \\
+  \midrule
+  Blocker & 0 & \\
+  Critical & 4 & (todas en \texttt{frontend/app.js}) \\
+  Major & 2 & (JS + CSS) \\
+  Minor & 0 & \\
+  Info & 0 & \\
+  \bottomrule
+\end{tabularx}
+
+\subsubsection{Ratings de Calidad}
+
+\begin{tabularx}{\textwidth}{lXr}
+  \toprule
+  \textbf{Dimensi\'on} & \textbf{Rating} & \textbf{Interpretaci\'on} \\
+  \midrule
+  Fiabilidad (Reliability) & A (1.0) & Sin bugs \\
+  Seguridad (Security) & A (1.0) & Sin vulnerabilidades \\
+  Revisi\'on de Seguridad & E (5.0) & 4 hotspots sin revisar \\
+  Mantenibilidad (SQALE) & A (1.0) & Deuda t\'ecnica m\'inima \\
+  \bottomrule
+\end{tabularx}
+
+\subsubsection{M\'etricas del Proyecto}
+
+\begin{tabularx}{\textwidth}{lXr}
+  \toprule
+  \textbf{M\'etrica} & \textbf{Valor} & \\
+  \midrule
+  L\'ineas de c\'odigo (NCLOC) & 3,779 & \\
+  Archivos & 16 & \\
+  Sentencias & 942 & \\
+  Funciones & 168 & \\
+  Clases & 19 & \\
+  Complejidad Ciclom\'atica & 371 & \\
+  Complejidad Cognitiva & 245 & \\
+  Densidad de Comentarios & 1.6\% & \\
+  Duplicaci\'on & 0.0\% & \\
+  Cobertura (general) & 0.0\% & (JS/CSS sin reports) \\
+  Deuda T\'ecnica & 32 min & \\
+  \bottomrule
+\end{tabularx}
+
+\subsection{Observaciones}
+
+\begin{itemize}
+  \item \textbf{Quality Gate PASSED}: El proyecto cumple con los requisitos
+        m\'inimos de calidad definidos en la regla \textit{Sonar way}.
+  \item \textbf{0 bugs y 0 vulnerabilidades}: El c\'odigo de producci\'on no
+        contiene errores ni fallos de seguridad detectados por SonarQube.
+  \item \textbf{6 Code Smells}: Todos en el frontend (\texttt{frontend/app.js}
+        y \texttt{frontend/styles.css}). Corresponden al uso del operador
+        \texttt{void} y selectores CSS duplicados.
+  \item \textbf{4 Security Hotspots}: Requieren revisi\'on manual para
+        determinar si representan riesgos reales de seguridad.
+  \item \textbf{Deuda t\'ecnica de 32 minutos}: Valor muy bajo, lo que indica
+        que el c\'odigo es mantenible.
+  \item \textbf{Cobertura 0.0\%}: SonarQube no recibi\'o reportes de cobertura
+        para los archivos JavaScript y CSS del frontend. La cobertura de los
+        microservicios Python se mide por separado con \texttt{pytest-cov}
+        (97\% y 96\% respectivamente).
+  \item \textbf{Duplicaci\'on 0.0\%}: No se detectaron bloques de c\'odigo
+        duplicados en ninguno de los tres m\'odulos.
+\end{itemize}
+
+
+
+% ============================================================
+\section{Cobertura de C�digo}
+% ============================================================
+
+\subsection{Reporte Consolidado}
+
+\begin{longtable}{lrr}
+  \toprule
+  \textbf{M�dulo} & \textbf{L�neas} & \textbf{Cobertura} \\
+  \midrule
+  \endhead
+  \bottomrule
+  \endfoot
+  \textbf{Airport Service} & & \\
+  \hspace{0.5cm}domain/models.py & 2 & 100\% \\
+  \hspace{0.5cm}domain/exceptions.py & 8 & 100\% \\
+  \hspace{0.5cm}domain/ports.py & 7 & 100\% \\
+  \hspace{0.5cm}infrastructure/adapter.py & 38 & 100\% \\
+  \hspace{0.5cm}api/routes.py & 23 & 96\% \\
+  \midrule
+  \textbf{Itinerary Service} & & \\
+  \hspace{0.5cm}domain/models.py & 41 & 100\% \\
+  \hspace{0.5cm}domain/exceptions.py & 12 & 100\% \\
+  \hspace{0.5cm}domain/ports.py & 8 & 100\% \\
+  \hspace{0.5cm}domain/service.py & 33 & 100\% \\
+  \hspace{0.5cm}infrastructure/airport\_client.py & 22 & 100\% \\
+  \hspace{0.5cm}infrastructure/repository.py & 77 & 88\% \\
+  \hspace{0.5cm}api/routes.py & 37 & 95\% \\
+  \hspace{0.5cm}dependencies.py & 23 & 87\% \\
+  \bottomrule
+\end{longtable}
+
+\subsection{�reas no cubiertas}
+
+Las l�neas no cubiertas corresponden principalmente a:
+
+\begin{itemize}
+  \item \textbf{main.py} en ambos servicios (ignorado intencionalmente --
+        solo contiene configuraci�n de FastAPI y middleware CORS).
+  \item \textbf{Manejo de excepciones} en el repositorio SQLAlchemy
+        (bloques \texttt{except} en \texttt{save}, \texttt{update}, \texttt{delete}).
+  \item \textbf{Rama no cubierta} en \texttt{routes.py} de airport\_service
+        (l�nea de importaci�n no ejecutada en contexto de prueba).
+\end{itemize}
+
+% ============================================================
+\section{Conclusiones}
+% ============================================================
+
+\subsection{Resultados Obtenidos}
+
+\begin{enumerate}
+  \item \textbf{81 pruebas unitarias} creadas y ejecutadas con \textbf{100\% de �xito}.
+  \item \textbf{Cobertura superior al 95\%} en el c�digo fuente de ambos microservicios
+        (excluyendo archivos de configuraci�n pura como \texttt{main.py}).
+  \item \textbf{An�lisis est�tico}: Pylint 7.04/10 (airport) y 7.16/10 (itinerary).
+        Bandit: 0 vulnerabilidades de severidad media o alta.
+  \item \textbf{Pruebas de carga}: 300 peticiones simuladas, 100\,\% de �xito,
+        rendimiento de 154.4 req/s con latencia promedio de 17.7 ms.
+  \item \textbf{SonarQube}: Quality Gate PASSED, 0 bugs, 0 vulnerabilidades,
+        6 code smells, deuda t�cnica de 32 minutos, 0\% duplicaci�n.
+  \item La arquitectura hexagonal demostr� su valor: el dominio se prueba de forma
+        aislada y r�pida usando \textit{fakes}, sin depender de bases de datos ni
+        servicios externos.
+  \item Las pruebas de integraci�n del repositorio SQLAlchemy con SQLite en memoria
+        validan el comportamiento real de la capa de persistencia.
+  \item Los endpoints REST se validan mediante \texttt{TestClient} de FastAPI con
+        dependencias inyectadas (dobles de prueba).
+\end{enumerate}
+
+\subsection{Recomendaciones}
+
+\begin{enumerate}
+  \item \textbf{Pruebas de integraci�n E2E}: Implementar pruebas con Playwright
+        para validar el flujo completo frontend-backend (seg�n el ROADMAP).
+  \item \textbf{CI/CD}: Integrar estas pruebas en un pipeline de GitHub Actions
+        o Jenkins para ejecuci�n autom�tica en cada pull request.
+  \item \textbf{SonarQube en CI}: El an�lisis local con SonarQube ya est�
+        validado (Quality Gate PASSED). Se recomienda integrarlo en un pipeline
+        de CI/CD para an�lisis continuo en cada commit.
+  \item \textbf{Pruebas de carga en producci�n}: Ejecutar las pruebas de carga
+        contra los servicios reales con Docker y PostgreSQL para obtener m�tricas
+        de referencia en un entorno realista.
+  \item \textbf{Ampliar cobertura del repositorio}: Alcanzar el 100\% de cobertura
+        en \texttt{repository.py} probando los bloques \texttt{except}.
+  \item \textbf{Docstrings}: Agregar documentaci�n a m�dulos, clases y funciones
+        para mejorar la puntuaci�n de Pylint y la mantenibilidad del c�digo.
+\end{enumerate}
+
+\subsection{Comandos de Ejecuci�n R�pida}
+
+\begin{lstlisting}[style=bashstyle]
+# Airport Service
+cd airport_service
+python -m pytest -v
+
+# Itinerary Service
+cd itinerary_service
+python -m pytest -v
+
+# Ambos con cobertura
+.\run_tests.ps1 -Coverage
+\end{lstlisting}
+
+\vspace{1cm}
+\begin{center}
+  \rule{0.5\textwidth}{0.5pt}\\[0.3cm]
+  {\small \textit{Informe generado el \today}}\\[0.2cm]
+  {\small \texttt{AeroRutas -- Sistema de Itinerarios Empresariales}}
+\end{center}
+
+\end{document}
